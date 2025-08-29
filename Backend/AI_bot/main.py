@@ -15,6 +15,9 @@ from pydantic import BaseModel
 
 from agents.base_agent import AgentConfig
 from agents.legal_agent import LegalAgent
+from agents.ai_insights_agent import AIInsightsAgent
+from agents.data_integration_agent import DataIntegrationAgent
+from agents.feedback_learning_agent import FeedbackLearningAgent
 from core.agent_manager import AgentManager
 
 
@@ -25,6 +28,33 @@ class SystemConfig(BaseModel):
     legal_agent: AgentConfig = AgentConfig(
         name="Legal Analysis Agent",
         description="Specializes in legal analysis, contract review, and compliance checking",
+        model="gpt-4",
+        temperature=0.1,
+        max_tokens=4000,
+        timeout=60
+    )
+    
+    ai_insights_agent: AgentConfig = AgentConfig(
+        name="AI Insights Agent",
+        description="Provides explainable AI insights and actionable recommendations",
+        model="gpt-4",
+        temperature=0.1,
+        max_tokens=4000,
+        timeout=60
+    )
+    
+    data_integration_agent: AgentConfig = AgentConfig(
+        name="Data Integration Agent",
+        description="Handles data integration from multiple sources including Realie API",
+        model="gpt-4",
+        temperature=0.1,
+        max_tokens=4000,
+        timeout=60
+    )
+    
+    feedback_learning_agent: AgentConfig = AgentConfig(
+        name="Feedback & Learning Agent",
+        description="Implements continuous learning and monitors AI accuracy",
         model="gpt-4",
         temperature=0.1,
         max_tokens=4000,
@@ -100,18 +130,20 @@ class RealEstateAgentSystem:
             await self.agent_manager.register_agent(legal_agent, "legal")
             self.logger.info("Legal Agent initialized and registered")
             
-            # TODO: Initialize other agents (Financial, Market, Document, User)
-            # financial_agent = FinancialAgent(self.config.financial_agent)
-            # await self.agent_manager.register_agent(financial_agent, "financial")
+            # Initialize AI Insights Agent
+            ai_insights_agent = AIInsightsAgent(self.config.ai_insights_agent)
+            await self.agent_manager.register_agent(ai_insights_agent, "ai_insights")
+            self.logger.info("AI Insights Agent initialized and registered")
             
-            # market_agent = MarketAgent(self.config.market_agent)
-            # await self.agent_manager.register_agent(market_agent, "market")
+            # Initialize Data Integration Agent
+            data_integration_agent = DataIntegrationAgent(self.config.data_integration_agent)
+            await self.agent_manager.register_agent(data_integration_agent, "data_integration")
+            self.logger.info("Data Integration Agent initialized and registered")
             
-            # document_agent = DocumentAgent(self.config.document_agent)
-            # await self.agent_manager.register_agent(document_agent, "document")
-            
-            # user_agent = UserAgent(self.config.user_agent)
-            # await self.agent_manager.register_agent(user_agent, "user")
+            # Initialize Feedback & Learning Agent
+            feedback_learning_agent = FeedbackLearningAgent(self.config.feedback_learning_agent)
+            await self.agent_manager.register_agent(feedback_learning_agent, "feedback_learning")
+            self.logger.info("Feedback & Learning Agent initialized and registered")
             
             self.logger.info(f"All agents initialized. Total agents: {len(self.agent_manager.agents)}")
             

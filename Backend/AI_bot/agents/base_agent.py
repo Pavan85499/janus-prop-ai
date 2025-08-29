@@ -73,6 +73,11 @@ class BaseAgent(ABC):
             "last_request_time": None
         }
         self._is_healthy = True
+
+    async def start(self):
+        """Start the agent."""
+        self.logger.info("Starting agent", agent_name=self.config.name)
+        self._is_healthy = True
         
     async def process_request(
         self, 

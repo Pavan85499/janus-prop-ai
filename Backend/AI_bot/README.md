@@ -1,209 +1,315 @@
-# Real Estate AI Agent System
+# Janus Prop AI - Real Estate AI Agent System
 
-A modular, scalable AI agent system designed specifically for real estate operations. This system leverages autonomous agents to handle specialized tasks in legal analysis, financial modeling, market research, and document processing.
+A comprehensive AI-powered real estate analysis system that provides explainable insights, data integration, and continuous learning capabilities.
 
-## 🏗️ Architecture Overview
+## Features
 
-The system is built on a multi-agent architecture where each agent specializes in a specific domain:
+### 1. Data Integration First
+- **Realie API Integration**: Immediate integration for speed and freshness (baseline property coverage)
+- **ATTOM Data Preparation**: Historical data and deeper analytics (coming soon)
+- **Modular Architecture**: Easy swapping/adding of new data sources
+- **Scalable Design**: Built for millions of records and thousands of users
 
-- **Legal Agent**: Contract analysis, compliance checking, regulatory updates
-- **Financial Agent**: Market analysis, investment calculations, risk assessment  
-- **Market Agent**: Property valuation, trend analysis, comparative market studies
-- **Document Agent**: Contract generation, document processing, record management
-- **User Agent**: Customer service, query handling, personalized recommendations
+### 2. AI Insights Must Be Explainable
+- **Clear Explanations**: Every prediction comes with a short, clear "why" in plain English
+- **Consistent Pipeline**: Built-in system to generate and display explanations
+- **No Black Box**: Users never see scores without context
+- **Confidence Levels**: Transparent confidence scoring for all insights
 
-## 🚀 Quick Start
+### 3. Actionable UX, Not Just Analysis
+- **Action Buttons**: Every AI insight paired with actionable next steps
+- **Simple Interface**: Collapsible, fast UI that avoids overwhelming users
+- **Smart Workflows**: "Add to Leads," "Contact Owner," "Run Financing" actions
+- **User-Centric Design**: Focus on what users can do, not just what they can see
+
+### 4. Scalable, Modular Backend
+- **Microservice Design**: Each agent/service built and scaled independently
+- **Agent2Agent Protocol**: Inter-agent communication for complex workflows
+- **Horizontal Scaling**: Easy scaling for millions of records and thousands of users
+- **Async Architecture**: Built on asyncio for high performance
+
+### 5. Feedback & Learning Loop
+- **Continuous Learning**: Results fed back into retraining/adjustments
+- **Internal Dashboard**: Monitor AI accuracy and user behavior
+- **Performance Metrics**: Track improvement over time
+- **User Feedback**: Collect and analyze user satisfaction
+
+## System Architecture
+
+### Core Agents
+
+1. **AI Insights Agent** (`agents/ai_insights_agent.py`)
+   - Generates explainable property insights
+   - Provides actionable recommendations
+   - Calculates confidence scores
+   - Supports multiple insight types
+
+2. **Data Integration Agent** (`agents/data_integration_agent.py`)
+   - Manages multiple data sources
+   - Handles Realie API integration
+   - Prepares for ATTOM data enrichment
+   - Provides unified data interface
+
+3. **Feedback & Learning Agent** (`agents/feedback_learning_agent.py`)
+   - Collects user feedback
+   - Tracks prediction accuracy
+   - Generates learning metrics
+   - Enables continuous improvement
+
+4. **Legal Agent** (`agents/legal_agent.py`)
+   - Legal analysis and compliance checking
+   - Contract review capabilities
+   - Regulatory compliance monitoring
+
+### Communication System
+
+- **Agent Manager** (`core/agent_manager.py`): Central orchestration
+- **Communication Manager** (`core/communication.py`): Inter-agent messaging
+- **Workflow Engine**: Complex multi-step processes
+
+## Quick Start
 
 ### Prerequisites
+
 - Python 3.8+
+- pip or poetry
 - Virtual environment (recommended)
-- OpenAI API key or compatible LLM provider
 
 ### Installation
 
 1. **Clone the repository**
-```bash
-git clone <repository-url>
-cd real-estate-ai-agents
-```
+   ```bash
+   git clone <repository-url>
+   cd janus-prop-ai/Backend/AI_bot
+   ```
 
-2. **Set up virtual environment**
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
+2. **Create virtual environment**
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
 
 3. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Set up environment variables**
+   ```bash
+   cp env.example .env
+   # Edit .env with your API keys and configuration
+   ```
+
+### Running the System
+
+#### Option 1: FastAPI Server (Recommended for Development)
+
 ```bash
-pip install -r requirements.txt
+python api_server.py
 ```
 
-4. **Configure environment variables**
-```bash
-cp .env.example .env
-# Edit .env with your API keys and configuration
-```
+The API server will start on `http://localhost:8000`
 
-5. **Run the system**
+- **API Documentation**: `http://localhost:8000/docs`
+- **Health Check**: `http://localhost:8000/health`
+- **System Status**: `http://localhost:8000/api/system/status`
+
+#### Option 2: Direct Agent System
+
 ```bash
 python main.py
 ```
 
-## 📁 Project Structure
+This runs the full agent system with console output.
 
-```
-real-estate-ai-agents/
-├── agents/                 # Individual agent implementations
-│   ├── base_agent.py      # Base agent class
-│   ├── legal_agent.py     # Legal analysis agent
-│   ├── financial_agent.py # Financial modeling agent
-│   ├── market_agent.py    # Market research agent
-│   ├── document_agent.py  # Document processing agent
-│   └── user_agent.py      # User interaction agent
-├── core/                   # Core system components
-│   ├── agent_manager.py   # Agent orchestration
-│   ├── workflow.py        # Workflow management
-│   └── communication.py   # Inter-agent communication
-├── data/                   # Data sources and models
-│   ├── models/            # Data models
-│   ├── sources/           # External data sources
-│   └── database/          # Database configuration
-├── api/                    # API endpoints
-│   ├── routes/            # API route definitions
-│   └── middleware/        # API middleware
-├── ui/                     # User interface
-│   ├── web/               # Web interface
-│   └── cli/               # Command line interface
-├── tests/                  # Test suite
-├── docs/                   # Documentation
-├── config/                 # Configuration files
-├── main.py                 # Main application entry point
-├── requirements.txt        # Python dependencies
-└── README.md              # This file
+### Frontend Integration
+
+The frontend is built with React + TypeScript and includes:
+
+- **AI Insights Panel**: Display explainable insights with actionable steps
+- **Data Integration Dashboard**: Monitor data sources and sync status
+- **Learning Metrics Dashboard**: Track AI performance and improvement
+- **Tabbed Interface**: Organized view of all system components
+
+To run the frontend:
+
+```bash
+cd ../Frontend
+npm install
+npm start
 ```
 
-## 🔧 Configuration
+## API Endpoints
+
+### AI Insights
+- `POST /api/ai-insights/analyze` - Analyze property and generate insights
+- `GET /api/ai-insights/capabilities` - Get agent capabilities
+
+### Data Integration
+- `POST /api/data-integration/search` - Search properties
+- `POST /api/data-integration/sync` - Sync data source
+- `POST /api/data-integration/add-source` - Add new data source
+- `GET /api/data-integration/status` - Get integration status
+
+### Feedback & Learning
+- `POST /api/feedback/collect` - Collect user feedback
+- `POST /api/feedback/track-accuracy` - Track prediction accuracy
+- `GET /api/feedback/learning-metrics` - Get learning metrics
+- `GET /api/feedback/agent-performance` - Get agent performance
+
+### System
+- `GET /health` - Health check
+- `GET /api/system/status` - Overall system status
+
+## Configuration
 
 ### Environment Variables
 
-Create a `.env` file with the following variables:
+Create a `.env` file with:
 
 ```env
-# API Configuration
+# OpenAI Configuration
 OPENAI_API_KEY=your_openai_api_key
-ANTHROPIC_API_KEY=your_anthropic_api_key
 
-# Database Configuration
-DATABASE_URL=postgresql://user:password@localhost/realestate
+# Realie API Configuration
+REALIE_API_KEY=your_realie_api_key
+REALIE_BASE_URL=https://api.realie.com/v1
 
-# Agent Configuration
-MAX_CONCURRENT_AGENTS=10
-AGENT_TIMEOUT=300
+# ATTOM Data Configuration (Future)
+ATTOM_API_KEY=your_attom_api_key
+ATTOM_BASE_URL=https://api.attomdata.com/v3.0
 
-# Logging
+# System Configuration
 LOG_LEVEL=INFO
-LOG_FILE=logs/app.log
+MAX_CONCURRENT_AGENTS=10
+SYSTEM_TIMEOUT=300
 ```
 
 ### Agent Configuration
 
-Each agent can be configured individually in `config/agents.yaml`:
+Modify `config/agents.yaml` to customize agent behavior:
 
 ```yaml
-legal_agent:
+ai_insights_agent:
   model: gpt-4
   temperature: 0.1
   max_tokens: 4000
   timeout: 60
 
-financial_agent:
-  model: claude-3-sonnet
-  temperature: 0.2
-  max_tokens: 6000
-  timeout: 90
+data_integration_agent:
+  realie_api:
+    rate_limit: 60
+    timeout: 30
+  attom_data:
+    rate_limit: 30
+    timeout: 45
 ```
 
-## 🧪 Testing
+## Development
 
-Run the test suite:
+### Project Structure
+
+```
+Backend/AI_bot/
+├── agents/                 # AI agent implementations
+│   ├── base_agent.py      # Base agent class
+│   ├── ai_insights_agent.py
+│   ├── data_integration_agent.py
+│   ├── feedback_learning_agent.py
+│   └── legal_agent.py
+├── core/                  # Core system components
+│   ├── agent_manager.py   # Agent orchestration
+│   ├── communication.py   # Inter-agent messaging
+│   └── exceptions.py      # Custom exceptions
+├── config/                # Configuration files
+│   └── agents.yaml       # Agent configurations
+├── api_server.py          # FastAPI server
+├── main.py               # Direct agent system
+└── requirements.txt      # Python dependencies
+```
+
+### Adding New Agents
+
+1. **Create agent class** inheriting from `BaseAgent`
+2. **Implement required methods**:
+   - `get_capabilities()`
+   - `process_request()`
+   - `health_check()`
+   - `shutdown()`
+3. **Register in main.py** and `api_server.py`
+4. **Add configuration** in `config/agents.yaml`
+
+### Testing
 
 ```bash
-# Run all tests
+# Run tests
 pytest
 
-# Run specific test file
-pytest tests/test_legal_agent.py
-
 # Run with coverage
-pytest --cov=agents --cov-report=html
+pytest --cov=agents --cov=core
+
+# Run specific test file
+pytest tests/test_ai_insights_agent.py
 ```
 
-## 📊 Monitoring
+## Deployment
 
-The system includes comprehensive monitoring:
+### Production Considerations
 
-- **Performance Metrics**: Response times, accuracy, throughput
-- **Agent Health**: Status, error rates, resource usage
-- **Workflow Analytics**: Success rates, bottlenecks, optimization opportunities
+- **Environment Variables**: Use proper secret management
+- **Database**: Configure persistent storage for feedback and metrics
+- **Monitoring**: Add logging and metrics collection
+- **Scaling**: Use load balancers and multiple instances
+- **Security**: Implement proper authentication and authorization
 
-Access monitoring dashboard at: `http://localhost:8000/monitoring`
+### Docker Deployment
 
-## 🔌 API Usage
+```dockerfile
+FROM python:3.11-slim
 
-### Basic Agent Query
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
 
-```python
-from agents.agent_manager import AgentManager
-
-manager = AgentManager()
-response = await manager.query_agent(
-    agent_type="legal",
-    query="Analyze this purchase agreement for compliance issues",
-    context={"document": "purchase_agreement.pdf"}
-)
+COPY . .
+CMD ["python", "api_server.py"]
 ```
 
-### Multi-Agent Workflow
-
-```python
-workflow = await manager.create_workflow([
-    {"agent": "market", "task": "property_valuation", "data": property_data},
-    {"agent": "financial", "task": "investment_analysis", "data": financial_data},
-    {"agent": "legal", "task": "compliance_check", "data": legal_data}
-])
-
-results = await workflow.execute()
-```
-
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+2. Create a feature branch
+3. Make your changes
+4. Add tests
+5. Submit a pull request
 
-## 📄 License
+## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+[Add your license information here]
 
-## 🆘 Support
+## Support
 
-- **Documentation**: [docs/](docs/)
-- **Issues**: [GitHub Issues](https://github.com/your-repo/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-repo/discussions)
+For questions and support:
+- Create an issue in the repository
+- Contact the development team
+- Check the documentation
 
-## 🚀 Roadmap
+## Roadmap
 
-- [ ] Multi-language support
-- [ ] Advanced workflow orchestration
-- [ ] Real-time collaboration features
-- [ ] Mobile application
-- [ ] Integration with major real estate platforms
-- [ ] Advanced analytics and reporting
-- [ ] Machine learning model training pipeline
-- [ ] Blockchain integration for smart contracts
+### Phase 1 (Current)
+- ✅ Core agent system
+- ✅ AI insights generation
+- ✅ Data integration framework
+- ✅ Feedback collection system
 
----
+### Phase 2 (Next)
+- 🔄 ATTOM data integration
+- 🔄 Advanced market analysis
+- 🔄 Predictive modeling
+- 🔄 User authentication
 
-**Built with ❤️ for the future of real estate technology**
+### Phase 3 (Future)
+- 📋 Advanced AI models
+- 📋 Real-time data streaming
+- 📋 Mobile applications
+- 📋 Enterprise features
