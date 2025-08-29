@@ -18,6 +18,10 @@ from agents.legal_agent import LegalAgent
 from agents.ai_insights_agent import AIInsightsAgent
 from agents.data_integration_agent import DataIntegrationAgent
 from agents.feedback_learning_agent import FeedbackLearningAgent
+from agents.financial_agent import FinancialAgent
+from agents.market_agent import MarketAgent
+from agents.document_agent import DocumentAgent
+from agents.coordinator_agent import CoordinatorAgent
 from core.agent_manager import AgentManager
 
 
@@ -144,6 +148,54 @@ class RealEstateAgentSystem:
             feedback_learning_agent = FeedbackLearningAgent(self.config.feedback_learning_agent)
             await self.agent_manager.register_agent(feedback_learning_agent, "feedback_learning")
             self.logger.info("Feedback & Learning Agent initialized and registered")
+
+            # Initialize Financial Agent
+            financial_agent = FinancialAgent(AgentConfig(
+                name="Financial Modeling Agent",
+                description="Specializes in financial analysis, investment calculations, and risk assessment",
+                model="gpt-4",
+                temperature=0.2,
+                max_tokens=6000,
+                timeout=90,
+            ))
+            await self.agent_manager.register_agent(financial_agent, "financial")
+            self.logger.info("Financial Agent initialized and registered")
+
+            # Initialize Market Agent
+            market_agent = MarketAgent(AgentConfig(
+                name="Market Research Agent",
+                description="Specializes in property valuation, market trends, and comparative analysis",
+                model="gpt-4",
+                temperature=0.15,
+                max_tokens=5000,
+                timeout=75,
+            ))
+            await self.agent_manager.register_agent(market_agent, "market")
+            self.logger.info("Market Agent initialized and registered")
+
+            # Initialize Document Agent
+            document_agent = DocumentAgent(AgentConfig(
+                name="Document Processing Agent",
+                description="Processes contracts, disclosures, and real estate documents",
+                model="gpt-4",
+                temperature=0.1,
+                max_tokens=8000,
+                timeout=120,
+            ))
+            await self.agent_manager.register_agent(document_agent, "document")
+            self.logger.info("Document Agent initialized and registered")
+
+            # Initialize Coordinator Agent
+            coordinator_agent = CoordinatorAgent(AgentConfig(
+                name="Coordinator Agent",
+                description="Plans and orchestrates multi-agent workflows",
+                model="gpt-4",
+                temperature=0.1,
+                max_tokens=4000,
+                timeout=60,
+            ))
+            await self.agent_manager.register_agent(coordinator_agent, "coordinator")
+            self.logger.info("Coordinator Agent initialized and registered")
             
             self.logger.info(f"All agents initialized. Total agents: {len(self.agent_manager.agents)}")
             

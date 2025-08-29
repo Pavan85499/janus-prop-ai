@@ -35,7 +35,7 @@ class AgentConfig(BaseModel):
     version: str = "1.0.0"
     
     class Config:
-        extra = "forbid"
+        extra = "allow"
 
 
 class AgentResponse(BaseModel):
