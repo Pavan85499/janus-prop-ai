@@ -19,8 +19,11 @@ import {
   Archive, 
   TrendingUp,
   MapPin,
-  DollarSign
+  DollarSign,
+  RefreshCw,
+  AlertCircle
 } from "lucide-react";
+import { useRealEstateAPIs } from "@/hooks/useRealEstateAPIs";
 
 const mockDeals = [
   {
@@ -86,6 +89,31 @@ interface DealTableProps {
 
 export function DealTable({ onPropertySelect }: DealTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
+  
+  // Use real-time real estate APIs data
+  const {
+    properties: realEstateProperties,
+    summary,
+    loading,
+    error,
+    isConnected,
+    lastUpdated,
+    refreshProperties,
+    testConnection
+  } = useRealEstateAPIs(true, 60000); // Auto-refresh every minute
+
+  // Convert real estate APIs data to deal format
+  const deals = realEstateProperties.map(prop => ({
+    id: prop.id,
+    address: prop.address,
+    lienScore: Math.round((prop.api_confidence || 0.8) * 100), // Convert API confidence to score
+    capRate: prop.estimated_value && prop.price ? ((prop.estimated_value - prop.price) / prop.price * 100) : 8.5,
+    strategy: prop.market_trend === "Rising" ? "Buy-to-Hold" : prop.market_trend === "Stable" ? "BRRRR" : "Quick Flip",
+    aiSummary: `AI Analysis: ${prop.market_trend} market trend with ${prop.api_confidence ? Math.round(prop.api_confidence * 100) : 80}% confidence. Data source: ${prop.data_source}`,
+    risk: prop.market_trend === "Declining" ? "high" : prop.market_trend === "Stable" ? "medium" : "low",
+    price: `$${prop.price ? prop.price.toLocaleString() : 'N/A'}`,
+    rentEstimate: prop.price ? `$${Math.round(prop.price * 0.01).toLocaleString()}/mo` : 'N/A'
+  }));
   const [sortBy, setSortBy] = useState("lienScore");
 
   const getScoreColor = (score: number) => {
@@ -103,7 +131,7 @@ export function DealTable({ onPropertySelect }: DealTableProps) {
     return variants[risk as keyof typeof variants] || variants.medium;
   };
 
-  const filteredDeals = mockDeals.filter(deal =>
+  const filteredDeals = deals.filter(deal =>
     deal.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
     deal.strategy.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -113,9 +141,9 @@ export function DealTable({ onPropertySelect }: DealTableProps) {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="font-display text-2xl font-normal">Live Deal Pipeline</h2>
-          <p className="text-muted-foreground mt-1">
-            {filteredDeals.length} opportunities • Updated 3 minutes ago
-          </p>
+                     <p className="text-muted-foreground mt-1">
+             {filteredDeals.length} opportunities • {lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString()}` : 'Loading...'}
+           </p>
         </div>
         
         <div className="flex items-center gap-3">
@@ -138,14 +166,83 @@ export function DealTable({ onPropertySelect }: DealTableProps) {
 
       <Card className="data-card">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-primary" />
-            Investment Opportunities
-          </CardTitle>
+                  <CardTitle className="flex items-center gap-2">
+          <TrendingUp className="w-5 h-5 text-primary" />
+          Investment Opportunities
+          {lastUpdated && (
+            <span className="text-sm font-normal text-muted-foreground">
+              • Updated {lastUpdated.toLocaleTimeString()}
+            </span>
+          )}
+        </CardTitle>
+        <div className="flex items-center gap-2">
+          {!isConnected && (
+            <Badge variant="destructive" className="text-xs">
+              <AlertCircle className="w-3 h-3 mr-1" />
+              Offline
+            </Badge>
+          )}
+          <Button
+            size="sm"
+            variant="outline"
+                              onClick={refreshProperties}
+            disabled={loading}
+            className="h-7 px-2"
+          >
+            <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
+          </Button>
+        </div>
         </CardHeader>
         
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          {/* Error Display */}
+          {error && (
+            <div className="p-4 bg-destructive/10 border-b border-destructive/20">
+              <div className="flex items-center gap-2 text-destructive">
+                <AlertCircle className="h-4 w-4" />
+                <span className="font-medium">Error:</span>
+              </div>
+              <p className="text-sm text-destructive mt-1">{error}</p>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={testConnection}
+                className="mt-2"
+              >
+                Test Connection
+              </Button>
+            </div>
+          )}
+
+          {/* Loading State */}
+          {loading && (
+            <div className="flex items-center justify-center py-8">
+              <RefreshCw className="w-6 h-6 animate-spin text-muted-foreground" />
+              <span className="ml-2 text-muted-foreground">Loading opportunities...</span>
+            </div>
+          )}
+
+          {/* No Data State */}
+          {!loading && deals.length === 0 && (
+            <div className="text-center py-8">
+              <TrendingUp className="w-8 h-8 mx-auto mb-2 text-muted-foreground opacity-50" />
+              <p className="text-sm text-muted-foreground">
+                {isConnected 
+                  ? "No investment opportunities found. Try adjusting your filters."
+                  : "Unable to connect to the backend. Check your connection and try again."
+                }
+              </p>
+              {!isConnected && (
+                <Button onClick={testConnection} variant="outline" className="mt-2">
+                  Test Connection
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* Table Content - Only show when not loading and there are deals */}
+          {!loading && deals.length > 0 && (
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="border-b border-border/30">
@@ -248,6 +345,7 @@ export function DealTable({ onPropertySelect }: DealTableProps) {
               </TableBody>
             </Table>
           </div>
+        )}
         </CardContent>
       </Card>
     </div>

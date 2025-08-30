@@ -2,53 +2,9 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Map, List, Star, Eye, MoreHorizontal } from "lucide-react";
+import { Map, List, Star, Eye, MoreHorizontal, RefreshCw, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
-
-const mockProperties = [
-  {
-    id: 1,
-    address: "123 Oak Street, Brooklyn, NY 11201",
-    price: 485000,
-    estimatedValue: 620000,
-    equity: 22,
-    type: "Single Family",
-    beds: 3,
-    baths: 2,
-    sqft: 1200,
-    janusScore: 94,
-    distressLevel: "High",
-    image: "/placeholder.svg"
-  },
-  {
-    id: 2,
-    address: "456 Maple Ave, Queens, NY 11355",
-    price: 325000,
-    estimatedValue: 415000,
-    equity: 28,
-    type: "Multi Family",
-    beds: 4,
-    baths: 3,
-    sqft: 1800,
-    janusScore: 87,
-    distressLevel: "Medium",
-    image: "/placeholder.svg"
-  },
-  {
-    id: 3,
-    address: "789 Pine Road, Bronx, NY 10451",
-    price: 195000,
-    estimatedValue: 280000,
-    equity: 30,
-    type: "Townhouse",
-    beds: 2,
-    baths: 1,
-    sqft: 950,
-    janusScore: 91,
-    distressLevel: "High",
-    image: "/placeholder.svg"
-  }
-];
+import { useRealEstateAPIs } from "@/hooks/useRealEstateAPIs";
 
 interface MapListViewProps {
   onPropertySelect: (property: any) => void;
@@ -57,6 +13,18 @@ interface MapListViewProps {
 
 export function MapListView({ onPropertySelect, onPropertyDetail }: MapListViewProps) {
   const [viewMode, setViewMode] = useState<'map' | 'list'>('list');
+  
+  // Use real-time real estate APIs data
+  const {
+    properties: realEstateProperties,
+    summary,
+    loading,
+    error,
+    isConnected,
+    lastUpdated,
+    refreshProperties,
+    testConnection
+  } = useRealEstateAPIs(true, 60000); // Auto-refresh every minute
 
   const getScoreColor = (score: number) => {
     if (score >= 90) return "bg-gold text-gold-foreground";
@@ -72,6 +40,22 @@ export function MapListView({ onPropertySelect, onPropertyDetail }: MapListViewP
     }
   };
 
+  // Convert real estate APIs data format to component format
+  const properties = realEstateProperties.map(prop => ({
+    id: prop.id,
+    address: prop.address,
+    price: prop.price || 0,
+    estimatedValue: prop.estimated_value || 0,
+    equity: prop.estimated_value && prop.price ? ((prop.estimated_value - prop.price) / prop.price * 100) : 0,
+    type: prop.property_type,
+    beds: prop.beds || 0,
+    baths: prop.baths || 0,
+    sqft: prop.sqft || 0,
+    janusScore: Math.round((prop.api_confidence || 0.8) * 100), // Convert API confidence to score
+    distressLevel: prop.market_trend === "Declining" ? "High" : prop.market_trend === "Stable" ? "Medium" : "Low",
+    image: "/placeholder.svg"
+  }));
+
   return (
     <div className="flex-1 flex flex-col bg-background">
       {/* View Toggle Header */}
@@ -81,9 +65,33 @@ export function MapListView({ onPropertySelect, onPropertyDetail }: MapListViewP
             <h2 className="font-display text-xl font-semibold text-foreground mb-1">
               Investment Opportunities
             </h2>
-            <p className="text-sm text-muted-foreground">
-              {mockProperties.length} properties match your criteria
-            </p>
+            <div className="flex items-center gap-4">
+              <p className="text-sm text-muted-foreground">
+                {properties.length} properties match your criteria
+                {lastUpdated && (
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    • Updated {lastUpdated.toLocaleTimeString()}
+                  </span>
+                )}
+              </p>
+              <div className="flex items-center gap-2">
+                {!isConnected && (
+                  <Badge variant="destructive" className="text-xs">
+                    <AlertCircle className="w-3 h-3 mr-1" />
+                    Offline
+                  </Badge>
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={refreshProperties}
+                  disabled={loading}
+                  className="h-7 px-2"
+                >
+                  <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
+                </Button>
+              </div>
+            </div>
           </div>
           <div className="flex items-center gap-2 bg-muted rounded-lg p-1">
             <Button
@@ -110,7 +118,56 @@ export function MapListView({ onPropertySelect, onPropertyDetail }: MapListViewP
 
       {/* Content Area */}
       <div className="flex-1 p-6">
-        {viewMode === 'map' ? (
+        {/* Error Display */}
+        {error && (
+          <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-md">
+            <div className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="h-4 w-4" />
+              <span className="font-medium">Error:</span>
+            </div>
+            <p className="text-sm text-destructive mt-1">{error}</p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={testConnection}
+              className="mt-2"
+            >
+              Test Connection
+            </Button>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loading && (
+          <div className="flex items-center justify-center py-12">
+            <RefreshCw className="w-8 h-8 animate-spin text-muted-foreground" />
+            <span className="ml-3 text-muted-foreground">Loading investment opportunities...</span>
+          </div>
+        )}
+
+        {/* No Data State */}
+        {!loading && properties.length === 0 && (
+          <div className="text-center py-12">
+            <Map className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+            <h3 className="text-lg font-medium text-muted-foreground mb-2">No opportunities found</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              {isConnected 
+                ? "No properties match your current criteria. Try adjusting your filters."
+                : "Unable to connect to the backend. Check your connection and try again."
+              }
+            </p>
+            {!isConnected && (
+              <Button onClick={testConnection} variant="outline">
+                Test Connection
+              </Button>
+            )}
+          </div>
+        )}
+
+        {/* Content - Only show when not loading and there are properties */}
+        {!loading && properties.length > 0 && (
+          <>
+            {viewMode === 'map' ? (
           // Map View
           <div className="h-full bg-muted rounded-lg border border-border flex items-center justify-center">
             <div className="text-center">
@@ -127,7 +184,7 @@ export function MapListView({ onPropertySelect, onPropertyDetail }: MapListViewP
         ) : (
           // List View
           <div className="space-y-4 h-full overflow-y-auto">
-            {mockProperties.map((property, index) => (
+                         {properties.map((property, index) => (
               <motion.div
                 key={property.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -233,6 +290,8 @@ export function MapListView({ onPropertySelect, onPropertyDetail }: MapListViewP
               </motion.div>
             ))}
           </div>
+        )}
+          </>
         )}
       </div>
     </div>

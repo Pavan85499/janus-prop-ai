@@ -5,6 +5,7 @@ import { PropertyPreview } from "./PropertyPreview";
 import { PropertyDetailView } from "./PropertyDetailView";
 import { AgentActivityConsole } from "./AgentActivityConsole";
 import { AIAgentChat } from "./AIAgentChat";
+import { BackendStatusIndicator } from "../ui/BackendStatusIndicator";
 
 export function MainDashboard() {
   const [selectedProperty, setSelectedProperty] = useState<any>(null);
@@ -40,6 +41,11 @@ export function MainDashboard() {
 
         {/* AI Agent Chat Interface */}
         <AIAgentChat />
+
+        {/* Backend Status Indicator */}
+        <div className="fixed top-4 right-4 z-50">
+          <BackendStatusIndicator showDetails={false} />
+        </div>
 
         {/* Property Detail Modal */}
         <PropertyDetailView
