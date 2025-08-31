@@ -400,6 +400,15 @@ async def root():
         }
     }
 
+@app.get("/health")
+async def simple_health_check():
+    """Simple health check endpoint at root level."""
+    return {
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat(),
+        "service": "Janus Prop AI Backend"
+    }
+
 @app.get("/api/v1/investment-opportunities/opportunities", response_model=InvestmentOpportunityResponse)
 async def get_investment_opportunities(
     limit: int = Query(50, ge=1, le=100),
