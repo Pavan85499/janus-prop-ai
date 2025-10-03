@@ -8,15 +8,107 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime
 from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
+from fastapi import APIRouter, HTTPException, BackgroundTasks
 from pydantic import BaseModel, Field
 
-from core.database import get_db_session
-from core.redis_client import cache_get, cache_set, cache_delete, publish_event
-from core.websocket_manager import get_websocket_manager
-from agents.agent_manager import get_agent_manager
+# Import with fallback handling
+try:
+    from core.redis_client import cache_get, cache_set, cache_delete, publish_event
+except ImportError:
+    # Fallback functions
+    async def cache_get(key: str):
+        return None
+    async def cache_set(key: str, value: Any, expire: int = 3600):
+        return False
+    async def cache_delete(key: str):
+        return False
+    async def publish_event(channel: str, event: str, data: Any):
+        return False
+
+try:
+    from core.websocket_manager import get_websocket_manager
+except ImportError:
+    # Fallback function
+    def get_websocket_manager():
+        return None
 
 router = APIRouter()
+# New: Manager-backed create/start/stop/task submission for real-time demo
+try:
+    from agents.agent_manager import get_agent_manager, AgentConfig
+except ImportError:
+    get_agent_manager = None
+    AgentConfig = None
+
+class NewAgentRequest(BaseModel):
+    name: str
+    type: str
+    description: str | None = None
+    capabilities: List[str] = Field(default_factory=list)
+
+@router.post("/")
+async def create_agent(new_agent: NewAgentRequest):
+    """Create an in-memory agent via AgentManager for real-time demos."""
+    try:
+        if not get_agent_manager or not AgentConfig:
+            raise HTTPException(status_code=500, detail="Agent manager unavailable")
+        manager = get_agent_manager()
+        agent_id = new_agent.name.lower().replace(" ", "_")
+        config = AgentConfig(
+            agent_id=agent_id,
+            name=new_agent.name,
+            agent_type=new_agent.type or "custom",
+            description=new_agent.description or f"Custom agent {new_agent.name}",
+            max_concurrent_tasks=3,
+            priority="normal",
+            config={}
+        )
+        manager.register_agent(config)
+        await manager.start_agent(agent_id)
+        return {"success": True, "agent_id": agent_id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create agent: {e}")
+
+@router.post("/{agent_id}/start")
+async def start_agent(agent_id: str):
+    try:
+        if not get_agent_manager:
+            raise HTTPException(status_code=500, detail="Agent manager unavailable")
+        manager = get_agent_manager()
+        await manager.start_agent(agent_id)
+        return {"success": True, "message": f"Agent {agent_id} started"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to start agent: {e}")
+
+@router.post("/{agent_id}/stop")
+async def stop_agent(agent_id: str):
+    try:
+        if not get_agent_manager:
+            raise HTTPException(status_code=500, detail="Agent manager unavailable")
+        manager = get_agent_manager()
+        await manager.stop_agent(agent_id)
+        return {"success": True, "message": f"Agent {agent_id} stopped"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to stop agent: {e}")
+
+class SubmitTaskRequest(BaseModel):
+    task_type: str
+    description: str | None = None
+    priority: str = Field(default="normal")
+    metadata: Dict[str, Any] | None = None
+
+@router.post("/{agent_id}/tasks")
+async def submit_task(agent_id: str, body: SubmitTaskRequest):
+    try:
+        if not get_agent_manager:
+            raise HTTPException(status_code=500, detail="Agent manager unavailable")
+        manager = get_agent_manager()
+        task_id = await manager.submit_task(agent_id, body.task_type, body.priority, description=body.description, **(body.metadata or {}))
+        return {"success": True, "task_id": task_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to submit task: {e}")
 
 # Pydantic models
 class AgentActivity(BaseModel):
@@ -57,7 +149,7 @@ class AgentsStatusResponse(BaseModel):
 # Mock data for development
 MOCK_AGENTS = {
     "eden": {
-        "id": "eden",
+        "agent_id": "eden",
         "name": "Eden",
         "status": "online",
         "health_score": 0.95,
@@ -67,7 +159,7 @@ MOCK_AGENTS = {
         "performance_metrics": {"accuracy": 0.92, "response_time": 1.2}
     },
     "orion": {
-        "id": "orion",
+        "agent_id": "orion",
         "name": "Orion",
         "status": "online",
         "health_score": 0.88,
@@ -77,7 +169,7 @@ MOCK_AGENTS = {
         "performance_metrics": {"sync_rate": 0.98, "error_rate": 0.02}
     },
     "atelius": {
-        "id": "atelius",
+        "agent_id": "atelius",
         "name": "Atelius",
         "status": "busy",
         "health_score": 0.91,
@@ -226,7 +318,8 @@ async def get_agents_status():
         return AgentsStatusResponse(
             agents=agents,
             total_agents=len(agents),
-            healthy_agents=healthy_count
+            healthy_agents=healthy_count,
+            timestamp=datetime.utcnow()
         )
         
     except Exception as e:
@@ -267,21 +360,31 @@ async def create_agent_activity(
         MOCK_ACTIVITIES.append(activity)
         
         # Cache the activity
-        await cache_set(f"agent_activity:{activity.id}", activity.dict(), expire=300)
+        try:
+            await cache_set(f"agent_activity:{activity.id}", activity.dict(), expire=300)
+        except Exception:
+            pass  # Cache not available
         
         # Publish real-time update
-        await publish_event(
-            f"agent:{agent_id}",
-            "activity_created",
-            activity.dict()
-        )
+        try:
+            await publish_event(
+                f"agent:{agent_id}",
+                "activity_created",
+                activity.dict()
+            )
+        except Exception:
+            pass  # Redis not available
         
         # Send WebSocket update
-        websocket_manager = get_websocket_manager()
-        await websocket_manager.send_agent_update(agent_id, {
-            "type": "activity_created",
-            "activity": activity.dict()
-        })
+        try:
+            websocket_manager = get_websocket_manager()
+            if websocket_manager:
+                await websocket_manager.send_agent_update(agent_id, {
+                    "type": "activity_created",
+                    "activity": activity.dict()
+                })
+        except Exception:
+            pass  # WebSocket not available
         
         return {"success": True, "activity_id": activity.id, "message": "Activity created successfully"}
         
@@ -305,21 +408,31 @@ async def update_agent_status(
         MOCK_AGENTS[agent_id]["last_activity"] = datetime.utcnow()
         
         # Cache the status
-        await cache_set(f"agent_status:{agent_id}", MOCK_AGENTS[agent_id], expire=60)
+        try:
+            await cache_set(f"agent_status:{agent_id}", MOCK_AGENTS[agent_id], expire=60)
+        except Exception:
+            pass  # Cache not available
         
         # Publish real-time update
-        await publish_event(
-            f"agent:{agent_id}",
-            "status_updated",
-            MOCK_AGENTS[agent_id]
-        )
+        try:
+            await publish_event(
+                f"agent:{agent_id}",
+                "status_updated",
+                MOCK_AGENTS[agent_id]
+            )
+        except Exception:
+            pass  # Redis not available
         
         # Send WebSocket update
-        websocket_manager = get_websocket_manager()
-        await websocket_manager.send_agent_update(agent_id, {
-            "type": "status_updated",
-            "status": MOCK_AGENTS[agent_id]
-        })
+        try:
+            websocket_manager = get_websocket_manager()
+            if websocket_manager:
+                await websocket_manager.send_agent_update(agent_id, {
+                    "type": "status_updated",
+                    "status": MOCK_AGENTS[agent_id]
+                })
+        except Exception:
+            pass  # WebSocket not available
         
         return {"success": True, "message": "Agent status updated successfully"}
         
@@ -345,7 +458,10 @@ async def dismiss_activity(activity_id: str):
         removed_activity = MOCK_ACTIVITIES.pop(activity_index)
         
         # Remove from cache
-        await cache_delete(f"agent_activity:{activity_id}")
+        try:
+            await cache_delete(f"agent_activity:{activity_id}")
+        except Exception:
+            pass  # Cache not available
         
         return {"success": True, "message": "Activity dismissed successfully"}
         

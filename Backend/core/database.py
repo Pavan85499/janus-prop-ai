@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     AsyncEngine
 )
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import declarative_base, Session
 from sqlalchemy.pool import NullPool
 
 from config.settings import get_settings
@@ -51,9 +51,9 @@ async def init_database() -> None:
         
         # Check if we have a valid database URL
         if not database_url or database_url == "postgresql://user:password@localhost:5432/janus_prop_ai":
-            logger.warning("No valid database configured. Skipping database initialization.")
-            logger.info("Please set up Supabase or local database configuration.")
-            return
+            logger.info("No database configured. Using SQLite for development.")
+            # Use SQLite for development
+            database_url = "sqlite+aiosqlite:///./janus_prop_ai.db"
         
         # Create async engine with proper driver
         # For Supabase, we need to ensure we're using asyncpg
@@ -63,15 +63,25 @@ async def init_database() -> None:
                 database_url = database_url.replace("postgresql://", "postgresql+asyncpg://")
         
         try:
-            _engine = create_async_engine(
-                database_url,
-                echo=settings.DEBUG,
-                pool_size=settings.DATABASE_POOL_SIZE,
-                max_overflow=settings.DATABASE_MAX_OVERFLOW,
-                pool_timeout=settings.DATABASE_POOL_TIMEOUT,
-                pool_pre_ping=True,
-                pool_recycle=3600,
-            )
+            # Configure engine based on database type
+            if "sqlite" in database_url:
+                # SQLite doesn't support connection pooling
+                _engine = create_async_engine(
+                    database_url,
+                    echo=settings.DEBUG,
+                    poolclass=NullPool,  # Use NullPool for SQLite
+                )
+            else:
+                # PostgreSQL/other databases support connection pooling
+                _engine = create_async_engine(
+                    database_url,
+                    echo=settings.DEBUG,
+                    pool_size=settings.DATABASE_POOL_SIZE,
+                    max_overflow=settings.DATABASE_MAX_OVERFLOW,
+                    pool_timeout=settings.DATABASE_POOL_TIMEOUT,
+                    pool_pre_ping=True,
+                    pool_recycle=3600,
+                )
         except Exception as e:
             logger.error("Failed to create async engine", error=str(e))
             if "asyncpg" in str(e):
@@ -160,6 +170,10 @@ async def health_check() -> bool:
         logger.warning("Database health check failed", error=str(e))
         return False
 
+def get_db() -> AsyncGenerator[AsyncSession, None]:
+    """FastAPI dependency to get database session."""
+    return get_db_session()
+
 # Database models - imported separately to avoid circular imports
 # from models.property import Property
 # from models.agent import Agent
@@ -173,5 +187,6 @@ __all__ = [
     "init_database",
     "close_database",
     "get_db_session",
+    "get_db",
     "health_check"
 ]

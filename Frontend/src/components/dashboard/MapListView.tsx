@@ -5,10 +5,28 @@ import { Badge } from "@/components/ui/badge";
 import { Map, List, Star, Eye, MoreHorizontal, RefreshCw, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { useRealEstateAPIs } from "@/hooks/useRealEstateAPIs";
+import GooglePropertyMap, { GMapMarker } from "@/components/dashboard/GooglePropertyMap";
+import PortfolioMap, { PortfolioMapMarker } from "@/components/dashboard/PortfolioMap";
+
+interface Property {
+  id: string;
+  address: string;
+  price: number;
+  estimatedValue: number;
+  equity: number;
+  type: string;
+  beds: number;
+  baths: number;
+  sqft: number;
+  janusScore: number;
+  distressLevel: string;
+  image: string;
+  daysOnMarket?: number;
+}
 
 interface MapListViewProps {
-  onPropertySelect: (property: any) => void;
-  onPropertyDetail: (property: any) => void;
+  onPropertySelect: (property: Property) => void;
+  onPropertyDetail: (property: Property) => void;
 }
 
 export function MapListView({ onPropertySelect, onPropertyDetail }: MapListViewProps) {
@@ -53,32 +71,49 @@ export function MapListView({ onPropertySelect, onPropertyDetail }: MapListViewP
     sqft: prop.sqft || 0,
     janusScore: Math.round((prop.api_confidence || 0.8) * 100), // Convert API confidence to score
     distressLevel: prop.market_trend === "Declining" ? "High" : prop.market_trend === "Stable" ? "Medium" : "Low",
-    image: "/placeholder.svg"
+    image: "/placeholder.svg",
+    lat: prop.latitude,
+    lng: prop.longitude
+  }));
+
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
+  const center = (() => {
+    const withCoords = properties.find(p => p.lat && p.lng);
+    return withCoords ? { lat: Number(withCoords.lat), lng: Number(withCoords.lng) } : { lat: 40.7128, lng: -74.0060 };
+  })();
+
+  const osmMarkers: PortfolioMapMarker[] = properties.filter(p => p.lat && p.lng).map(p => ({
+    id: p.id,
+    position: { lat: Number(p.lat), lng: Number(p.lng) },
+    label: p.address,
+    subtitle: `${p.janusScore} score`,
+    score: p.janusScore
   }));
 
   return (
-    <div className="flex-1 flex flex-col bg-background">
+    <div className="flex-1 flex flex-col bg-background min-h-0">
       {/* View Toggle Header */}
-      <div className="p-6 border-b border-border bg-card">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="font-display text-xl font-semibold text-foreground mb-1">
-              Investment Opportunities
+      <div className="responsive-padding border-b border-border bg-card">
+        <div className="responsive-flex-between">
+          <div className="flex-1 min-w-0">
+            <h2 className="responsive-heading font-semibold text-foreground mb-2">
+              Live Deal Pipeline
             </h2>
-            <div className="flex items-center gap-4">
-              <p className="text-sm text-muted-foreground">
+            <div className="responsive-flex items-center gap-2 sm:gap-4">
+              <p className="responsive-body text-muted-foreground leading-relaxed">
                 {properties.length} properties match your criteria
                 {lastUpdated && (
-                  <span className="ml-2 text-xs text-muted-foreground">
+                  <span className="ml-2 responsive-caption text-muted-foreground">
                     • Updated {lastUpdated.toLocaleTimeString()}
                   </span>
                 )}
               </p>
-              <div className="flex items-center gap-2">
+              <div className="responsive-flex items-center gap-2">
                 {!isConnected && (
-                  <Badge variant="destructive" className="text-xs">
+                  <Badge variant="destructive" className="responsive-caption">
                     <AlertCircle className="w-3 h-3 mr-1" />
-                    Offline
+                    <span className="mobile-only">Off</span>
+                    <span className="tablet-up">Offline</span>
                   </Badge>
                 )}
                 <Button
@@ -86,7 +121,7 @@ export function MapListView({ onPropertySelect, onPropertyDetail }: MapListViewP
                   variant="outline"
                   onClick={refreshProperties}
                   disabled={loading}
-                  className="h-7 px-2"
+                  className="touch-target h-7 px-2"
                 >
                   <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
                 </Button>
@@ -98,26 +133,28 @@ export function MapListView({ onPropertySelect, onPropertyDetail }: MapListViewP
               variant={viewMode === 'map' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setViewMode('map')}
-              className={viewMode === 'map' ? 'bg-ice text-ice-foreground' : 'hover:bg-background/50'}
+              className={`${viewMode === 'map' ? 'bg-ice text-ice-foreground' : 'hover:bg-background/50'} transition-all duration-200 touch-target`}
             >
               <Map className="w-4 h-4 mr-2" />
-              Map
+              <span className="mobile-only">M</span>
+              <span className="tablet-up">Map</span>
             </Button>
             <Button
               variant={viewMode === 'list' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setViewMode('list')}
-              className={viewMode === 'list' ? 'bg-ice text-ice-foreground' : 'hover:bg-background/50'}
+              className={`${viewMode === 'list' ? 'bg-ice text-ice-foreground' : 'hover:bg-background/50'} transition-all duration-200 touch-target`}
             >
               <List className="w-4 h-4 mr-2" />
-              List
+              <span className="mobile-only">L</span>
+              <span className="tablet-up">List</span>
             </Button>
           </div>
         </div>
       </div>
 
       {/* Content Area */}
-      <div className="flex-1 p-6">
+      <div className="flex-1 responsive-padding overflow-y-auto">
         {/* Error Display */}
         {error && (
           <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-md">
@@ -141,157 +178,152 @@ export function MapListView({ onPropertySelect, onPropertyDetail }: MapListViewP
         {loading && (
           <div className="flex items-center justify-center py-12">
             <RefreshCw className="w-8 h-8 animate-spin text-muted-foreground" />
-            <span className="ml-3 text-muted-foreground">Loading investment opportunities...</span>
+            <span className="ml-3 text-muted-foreground">Loading deals...</span>
           </div>
         )}
 
-        {/* No Data State */}
-        {!loading && properties.length === 0 && (
-          <div className="text-center py-12">
-            <Map className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-            <h3 className="text-lg font-medium text-muted-foreground mb-2">No opportunities found</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              {isConnected 
-                ? "No properties match your current criteria. Try adjusting your filters."
-                : "Unable to connect to the backend. Check your connection and try again."
-              }
-            </p>
-            {!isConnected && (
-              <Button onClick={testConnection} variant="outline">
-                Test Connection
-              </Button>
-            )}
-          </div>
-        )}
-
-        {/* Content - Only show when not loading and there are properties */}
-        {!loading && properties.length > 0 && (
-          <>
-            {viewMode === 'map' ? (
-          // Map View
-          <div className="h-full bg-muted rounded-lg border border-border flex items-center justify-center">
-            <div className="text-center">
-              <Map className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="font-display text-lg font-semibold text-foreground mb-2">
-                Interactive Property Map
-              </h3>
-              <p className="text-sm text-muted-foreground max-w-md">
-                Dynamic real estate map with color-coded opportunity scoring. 
-                Click pins to preview properties and see AI insights.
-              </p>
+        {/* Content */}
+        {!loading && (
+          viewMode === 'map' ? (
+            <div className="h-full bg-muted rounded-lg border border-border">
+              {apiKey ? (
+                <GooglePropertyMap
+                  apiKey={apiKey}
+                  center={center}
+                  markers={properties.filter(p => p.lat && p.lng).map(p => ({
+                    id: p.id,
+                    position: { lat: Number(p.lat), lng: Number(p.lng) },
+                    label: p.address,
+                    subtitle: `${p.janusScore} score`,
+                    score: p.janusScore
+                  }) as GMapMarker)}
+                  height={420}
+                />
+              ) : (
+                <PortfolioMap
+                  center={center}
+                  markers={osmMarkers}
+                  height={420}
+                />
+              )}
             </div>
-          </div>
-        ) : (
-          // List View
-          <div className="space-y-4 h-full overflow-y-auto">
-                         {properties.map((property, index) => (
-              <motion.div
-                key={property.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.1 }}
-              >
-                <Card 
-                  className="bg-card border-border hover:border-ice/50 transition-all duration-200 cursor-pointer"
-                  onClick={() => onPropertySelect(property)}
+          ) : (
+            // List View
+            <div className="space-y-4 h-full overflow-y-auto">
+              {properties.map((property, index) => (
+                <motion.div
+                  key={property.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.1 }}
                 >
-                  <CardContent className="p-6">
-                    <div className="flex gap-6">
-                      {/* Property Image */}
-                      <div className="w-32 h-24 bg-muted rounded-lg shrink-0 overflow-hidden">
-                        <img 
-                          src={property.image} 
-                          alt={property.address}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
+                  <Card 
+                    className="bg-card border-border hover:border-ice/50 transition-all duration-200 cursor-pointer touch-friendly"
+                    onClick={() => onPropertySelect(property as any)}
+                  >
+                    <CardContent className="responsive-padding">
+                      <div className="responsive-flex gap-4 sm:gap-6">
+                        {/* Property Image */}
+                        <div className="w-full sm:w-32 h-32 sm:h-24 bg-muted rounded-lg shrink-0 overflow-hidden">
+                          <img 
+                            src={property.image} 
+                            alt={property.address}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
 
-                      {/* Property Details */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between mb-3">
-                          <div>
-                            <h3 className="font-medium text-foreground mb-1 truncate">
-                              {property.address}
-                            </h3>
-                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                              <span>{property.beds} bed</span>
-                              <span>{property.baths} bath</span>
-                              <span>{property.sqft.toLocaleString()} sqft</span>
-                              <span>{property.type}</span>
+                        {/* Property Details */}
+                        <div className="flex-1 min-w-0">
+                          <div className="responsive-flex-between mb-3">
+                            <div className="flex-1 min-w-0">
+                              <h3 className="responsive-body font-medium text-foreground mb-1 truncate">
+                                {property.address}
+                              </h3>
+                              <div className="responsive-flex items-center gap-2 sm:gap-4 responsive-caption text-muted-foreground">
+                                <span>{property.beds} bed</span>
+                                <span>{property.baths} bath</span>
+                                <span>{property.sqft.toLocaleString()} sqft</span>
+                                <span className="mobile-only hidden sm:inline">{property.type}</span>
+                              </div>
+                              <div className="mobile-only mt-1">
+                                <span className="responsive-caption text-muted-foreground">{property.type}</span>
+                              </div>
+                            </div>
+                            <div className="responsive-flex items-center gap-2">
+                              <Badge className={`${getScoreColor(property.janusScore)} responsive-caption`}>
+                                <span className="mobile-only">{property.janusScore}</span>
+                                <span className="tablet-up">Score: {property.janusScore}</span>
+                              </Badge>
+                              <Badge 
+                                variant="outline" 
+                                className={`${getDistressColor(property.distressLevel)} responsive-caption`}
+                              >
+                                <span className="mobile-only">{property.distressLevel}</span>
+                                <span className="tablet-up">{property.distressLevel} Distress</span>
+                              </Badge>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Badge className={getScoreColor(property.janusScore)}>
-                              Score: {property.janusScore}
-                            </Badge>
-                            <Badge 
-                              variant="outline" 
-                              className={getDistressColor(property.distressLevel)}
-                            >
-                              {property.distressLevel} Distress
-                            </Badge>
-                          </div>
-                        </div>
 
-                        <div className="grid grid-cols-4 gap-4 mb-4">
-                          <div>
-                            <p className="text-xs text-muted-foreground mb-1">List Price</p>
-                            <p className="font-semibold text-foreground">
-                              ${property.price.toLocaleString()}
-                            </p>
+                          <div className="responsive-grid-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-4">
+                            <div>
+                              <p className="responsive-caption text-muted-foreground mb-1">List Price</p>
+                              <p className="responsive-body font-semibold text-foreground">
+                                ${property.price.toLocaleString()}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="responsive-caption text-muted-foreground mb-1">Est. Value</p>
+                              <p className="responsive-body font-semibold text-ice">
+                                ${property.estimatedValue.toLocaleString()}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="responsive-caption text-muted-foreground mb-1">Equity</p>
+                              <p className="responsive-body font-semibold text-gold">
+                                {property.equity}%
+                              </p>
+                            </div>
+                            <div>
+                              <p className="responsive-caption text-muted-foreground mb-1">Potential Gain</p>
+                              <p className="responsive-body font-semibold text-success">
+                                ${(property.estimatedValue - property.price).toLocaleString()}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground mb-1">Est. Value</p>
-                            <p className="font-semibold text-ice">
-                              ${property.estimatedValue.toLocaleString()}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground mb-1">Equity</p>
-                            <p className="font-semibold text-gold">
-                              {property.equity}%
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground mb-1">Potential Gain</p>
-                            <p className="font-semibold text-success">
-                              ${(property.estimatedValue - property.price).toLocaleString()}
-                            </p>
-                          </div>
-                        </div>
 
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4">
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              className="border-border hover:bg-muted"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onPropertyDetail(property);
-                              }}
-                            >
-                              <Eye className="w-4 h-4 mr-2" />
-                              View Details
-                            </Button>
-                            <Button size="sm" variant="ghost" className="hover:bg-muted">
-                              <Star className="w-4 h-4 mr-2" />
-                              Save
+                          <div className="responsive-flex-between">
+                            <div className="responsive-flex items-center gap-2 sm:gap-4">
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="border-border hover:bg-muted touch-target"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onPropertyDetail(property as any);
+                                }}
+                              >
+                                <Eye className="w-4 h-4 mr-2" />
+                                <span className="mobile-only">View</span>
+                                <span className="tablet-up">View Details</span>
+                              </Button>
+                              <Button size="sm" variant="ghost" className="hover:bg-muted touch-target">
+                                <Star className="w-4 h-4 mr-2" />
+                                <span className="mobile-only">Save</span>
+                                <span className="tablet-up">Save</span>
+                              </Button>
+                            </div>
+                            <Button size="sm" variant="ghost" className="hover:bg-muted touch-target">
+                              <MoreHorizontal className="w-4 h-4" />
                             </Button>
                           </div>
-                          <Button size="sm" variant="ghost" className="hover:bg-muted">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
                         </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-        )}
-          </>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </div>
+          )
         )}
       </div>
     </div>

@@ -39,7 +39,7 @@ export interface InvestmentOpportunityResponse {
     risk_levels_available: string[];
     property_types_available: string[];
   };
-  filters_applied: Record<string, any>;
+  filters_applied: Record<string, unknown>;
   last_updated: string;
 }
 
@@ -145,8 +145,8 @@ class InvestmentOpportunitiesService {
   }
 
   // Get investment summary
-  async getInvestmentSummary(): Promise<any> {
-    return this.makeRequest<any>('/api/v1/investment-opportunities/summary');
+  async getInvestmentSummary(): Promise<unknown> {
+    return this.makeRequest<unknown>('/api/v1/investment-opportunities/summary');
   }
 
   // Quick connection test

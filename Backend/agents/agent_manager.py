@@ -68,33 +68,129 @@ class AgentManager:
         self.is_running = False
         self.background_tasks: List[asyncio.Task] = []
         
-        # Initialize default agents
-        self._initialize_default_agents()
+        # Import agent handlers
+        try:
+            from agents.gemini_ai_agent import gemini_agent_handler
+        except ImportError:
+            gemini_agent_handler = None
+        
+        try:
+            from agents.attom_data_agent import attom_agent_handler
+        except ImportError:
+            attom_agent_handler = None
+        
+        try:
+            from agents.deal_sourcing_agent import deal_sourcing_agent_handler
+        except ImportError:
+            deal_sourcing_agent_handler = None
+        
+        try:
+            from agents.document_ingestion_agent import document_ingestion_agent_handler
+        except ImportError:
+            document_ingestion_agent_handler = None
+        
+        try:
+            from agents.automated_underwriting_agent import underwriting_agent_handler
+        except ImportError:
+            underwriting_agent_handler = None
+        
+        try:
+            from agents.legal_compliance_agent import legal_compliance_agent_handler
+        except ImportError:
+            legal_compliance_agent_handler = None
+        
+        try:
+            from agents.ai_investment_committee_agent import investment_committee_agent_handler
+        except ImportError:
+            investment_committee_agent_handler = None
+
+        # New Janus agents
+        try:
+            from agents.eden_agent import eden_agent_handler
+        except ImportError:
+            eden_agent_handler = None
+        try:
+            from agents.orion_agent import orion_agent_handler
+        except ImportError:
+            orion_agent_handler = None
+        try:
+            from agents.atelius_agent import atelius_agent_handler
+        except ImportError:
+            atelius_agent_handler = None
+        try:
+            from agents.osiris_agent import osiris_agent_handler
+        except ImportError:
+            osiris_agent_handler = None
+        
+        # Register agent handlers
+        self.agent_handlers = {}
+        
+        if gemini_agent_handler:
+            self.agent_handlers["gemini"] = gemini_agent_handler
+        if attom_agent_handler:
+            self.agent_handlers["attom"] = attom_agent_handler
+        if deal_sourcing_agent_handler:
+            self.agent_handlers["deal_sourcing"] = deal_sourcing_agent_handler
+        if document_ingestion_agent_handler:
+            self.agent_handlers["document_ingestion"] = document_ingestion_agent_handler
+        if underwriting_agent_handler:
+            self.agent_handlers["automated_underwriting"] = underwriting_agent_handler
+        if legal_compliance_agent_handler:
+            self.agent_handlers["legal_compliance"] = legal_compliance_agent_handler
+        if investment_committee_agent_handler:
+            self.agent_handlers["ai_investment_committee"] = investment_committee_agent_handler
+        # Register new Janus agents
+        if eden_agent_handler:
+            self.agent_handlers["eden"] = eden_agent_handler
+        if orion_agent_handler:
+            self.agent_handlers["orion"] = orion_agent_handler
+        if atelius_agent_handler:
+            self.agent_handlers["atelius"] = atelius_agent_handler
+        if osiris_agent_handler:
+            self.agent_handlers["osiris"] = osiris_agent_handler
+        
+        # Legacy and placeholder handlers
+        self.agent_handlers.update({
+            "ai_insights": self._handle_ai_insights,
+            "market_analysis": self._handle_market_analysis,
+            "lead_management": self._handle_lead_management,
+            "execution_closing": self._handle_execution_closing,
+            "post_acquisition": self._handle_post_acquisition
+        })
     
     def _initialize_default_agents(self):
         """Initialize default AI agents."""
         default_agents = [
+            # Legacy agents
             AgentConfig(
                 agent_id="eden",
                 name="Eden",
-                agent_type="ai_insights",
-                description="AI Insights and Property Analysis Agent",
+                agent_type="eden",
+                description="Investment Decision Agent - ranks deals and makes final calls",
                 max_concurrent_tasks=3,
                 priority="high"
             ),
             AgentConfig(
                 agent_id="orion",
                 name="Orion",
-                agent_type="gemini",
-                description="Google Gemini AI Integration Agent",
-                max_concurrent_tasks=5,
+                agent_type="orion",
+                description="Monitoring Agent - collects tax liens, auctions, violations, court activity",
+                max_concurrent_tasks=4,
                 priority="high"
             ),
             AgentConfig(
                 agent_id="atelius",
                 name="Atelius",
-                agent_type="attom",
-                description="ATTOM Real Estate Data Agent",
+                agent_type="atelius",
+                description="Legal Agent - parses filings, redemption rules, legal risks, title chains",
+                max_concurrent_tasks=3,
+                priority="high"
+            ),
+            AgentConfig(
+                agent_id="osiris",
+                name="Osiris",
+                agent_type="osiris",
+                description="Forecasting Agent - projects returns, redemption windows, yield",
                 max_concurrent_tasks=4,
                 priority="high"
             ),
@@ -113,6 +209,99 @@ class AgentManager:
                 description="Lead Qualification and Management Agent",
                 max_concurrent_tasks=2,
                 priority="normal"
+            ),
+            # New specialized agents for complete real estate lifecycle
+            AgentConfig(
+                agent_id="prospector",
+                name="Prospector",
+                agent_type="deal_sourcing",
+                description="Deal Sourcing & Discovery Agent - Scans millions of properties for distressed, undervalued, or high-potential assets",
+                max_concurrent_tasks=3,
+                priority="high",
+                config={
+                    "scan_radius_default": 25,
+                    "min_equity_threshold": 20000,
+                    "max_properties_per_scan": 1000
+                }
+            ),
+            AgentConfig(
+                agent_id="documentarian",
+                name="Documentarian",
+                agent_type="document_ingestion",
+                description="Document Ingestion & Parsing Agent - Processes deeds, leases, inspections, and financials into structured data",
+                max_concurrent_tasks=5,
+                priority="high",
+                config={
+                    "max_file_size": 50 * 1024 * 1024,  # 50MB
+                    "supported_formats": ["pdf", "docx", "jpg", "png", "txt"]
+                }
+            ),
+            AgentConfig(
+                agent_id="underwriter",
+                name="Underwriter",
+                agent_type="automated_underwriting",
+                description="Automated Underwriting & Analysis Agent - Instant cash-flow models, rent comps, renovation scenarios, and cap rates",
+                max_concurrent_tasks=4,
+                priority="high",
+                config={
+                    "default_cap_rate": 0.08,
+                    "default_cash_on_cash": 0.10,
+                    "analysis_confidence_threshold": 0.7
+                }
+            ),
+            AgentConfig(
+                agent_id="compliance_officer",
+                name="Compliance Officer",
+                agent_type="legal_compliance",
+                description="Legal & Compliance Agent - Automated review of ownership, zoning, permits, liens, and tax history",
+                max_concurrent_tasks=3,
+                priority="high",
+                config={
+                    "risk_tolerance": "medium",
+                    "compliance_depth": "comprehensive"
+                }
+            ),
+            AgentConfig(
+                agent_id="investment_committee",
+                name="Investment Committee",
+                agent_type="ai_investment_committee",
+                description="AI Investment Committee - Panel of agents that debates pros and cons, surfacing risks and opportunities",
+                max_concurrent_tasks=2,
+                priority="high",
+                config={
+                    "committee_size": 5,
+                    "decision_threshold": 0.7,
+                    "debate_rounds": 3
+                }
+            ),
+            AgentConfig(
+                agent_id="deal_closer",
+                name="Deal Closer",
+                agent_type="execution_closing",
+                description="Execution & Closing Agent - Contacts property owners, generates offers, contracts, and financing packages",
+                max_concurrent_tasks=3,
+                priority="high",
+                config={
+                    "auto_contact": False,  # Requires human approval
+                    "contract_templates": True,
+                    "financing_networks": True
+                }
+            ),
+            AgentConfig(
+                agent_id="portfolio_manager",
+                name="Portfolio Manager",
+                agent_type="post_acquisition",
+                description="Post-Acquisition Intelligence Agent - Tracks renovations, tenant demand, and refinancing opportunities",
+                max_concurrent_tasks=4,
+                priority="normal",
+                config={
+                    "monitoring_frequency": "weekly",
+                    "alert_thresholds": {
+                        "vacancy_rate": 0.1,
+                        "maintenance_costs": 1000,
+                        "cash_flow_drop": 0.2
+                    }
+                }
             )
         ]
         
@@ -198,11 +387,15 @@ class AgentManager:
         logger.info(f"Started agent: {agent_config.name} ({agent_id})")
         
         # Publish real-time update
-        await publish_event(
-            "agents",
-            "agent_started",
-            {"agent_id": agent_id, "status": "online"}
-        )
+        try:
+            await publish_event(
+                "agents",
+                "agent_started",
+                {"agent_id": agent_id, "status": "online"}
+            )
+        except Exception:
+            # Ignore Redis publish errors
+            pass
     
     async def stop_agent(self, agent_id: str):
         """Stop a specific agent."""
@@ -215,11 +408,15 @@ class AgentManager:
         logger.info(f"Stopped agent: {agent_id}")
         
         # Publish real-time update
-        await publish_event(
-            "agents",
-            "agent_stopped",
-            {"agent_id": agent_id, "status": "offline"}
-        )
+        try:
+            await publish_event(
+                "agents",
+                "agent_stopped",
+                {"agent_id": agent_id, "status": "offline"}
+            )
+        except Exception:
+            # Ignore Redis publish errors
+            pass
     
     async def submit_task(self, agent_id: str, task_type: str, priority: str = "normal", **kwargs) -> str:
         """Submit a task to an agent."""
@@ -249,11 +446,15 @@ class AgentManager:
         logger.info(f"Submitted task {task.task_id} to agent {agent_id}")
         
         # Publish real-time update
-        await publish_event(
-            f"agent:{agent_id}",
-            "task_submitted",
-            task.__dict__
-        )
+        try:
+            await publish_event(
+                f"agent:{agent_id}",
+                "task_submitted",
+                task.__dict__
+            )
+        except Exception:
+            # Ignore Redis publish errors
+            pass
         
         return task.task_id
     
@@ -401,12 +602,16 @@ class AgentManager:
                             
                             logger.warning(f"Agent {agent_id} may be unresponsive")
                             
-                            # Publish real-time update
-                            await publish_event(
-                                "agents",
-                                "agent_health_warning",
-                                {"agent_id": agent_id, "status": "error"}
-                            )
+                            # Publish real-time update (only if Redis is available)
+                            try:
+                                await publish_event(
+                                    "agents",
+                                    "agent_health_warning",
+                                    {"agent_id": agent_id, "status": "error"}
+                                )
+                            except Exception:
+                                # Ignore Redis publish errors
+                                pass
                 
                 await asyncio.sleep(30)  # Check every 30 seconds
                 
@@ -503,6 +708,67 @@ class AgentManager:
             "pending_tasks": pending_tasks,
             "running_tasks": running_tasks,
             "is_running": self.is_running
+        }
+
+    # Legacy agent handlers (to be replaced with specialized agents)
+    async def _handle_ai_insights(self, task_type: str, task_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Handle AI insights tasks."""
+        # Delegate to gemini agent for now
+        if "gemini" in self.agent_handlers:
+            return await self.agent_handlers["gemini"](task_type, task_data)
+        return {"status": "agent_not_available"}
+    
+    async def _handle_market_analysis(self, task_type: str, task_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Handle market analysis tasks."""
+        # Mock implementation - replace with real market analysis
+        return {
+            "market_trends": "positive",
+            "price_growth": 0.05,
+            "inventory_level": "low",
+            "recommendation": "favorable_market_conditions"
+        }
+    
+    async def _handle_lead_management(self, task_type: str, task_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Handle lead management tasks."""
+        # Mock implementation - replace with real lead management
+        return {
+            "lead_score": 85,
+            "qualification_status": "qualified",
+            "next_action": "schedule_viewing",
+            "priority": "high"
+        }
+    
+    # Placeholder handlers for new agents (to be implemented)
+    async def _handle_investment_committee(self, task_type: str, task_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Handle AI investment committee tasks."""
+        # Placeholder - will be implemented as separate agent
+        return {
+            "committee_decision": "recommend_purchase",
+            "confidence_score": 0.82,
+            "risk_assessment": "medium",
+            "unanimous_vote": False,
+            "dissenting_opinions": ["Market timing concerns"]
+        }
+    
+    async def _handle_execution_closing(self, task_type: str, task_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Handle execution and closing tasks."""
+        # Placeholder - will be implemented as separate agent
+        return {
+            "offer_generated": True,
+            "contact_attempted": True,
+            "financing_options": ["conventional", "hard_money", "private"],
+            "estimated_closing_date": "2024-03-15"
+        }
+    
+    async def _handle_post_acquisition(self, task_type: str, task_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Handle post-acquisition intelligence tasks."""
+        # Placeholder - will be implemented as separate agent
+        return {
+            "renovation_progress": 0.75,
+            "rental_demand": "high",
+            "refinancing_opportunity": True,
+            "estimated_completion": "2024-04-01",
+            "budget_variance": -0.05
         }
 
 # Global agent manager instance

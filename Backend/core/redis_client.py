@@ -28,9 +28,9 @@ async def init_redis() -> None:
     settings = get_settings()
     
     try:
-        # Check if Redis URL is the default localhost
-        if settings.REDIS_URL == "redis://localhost:6379/0":
-            logger.warning("Redis not configured. Skipping Redis initialization.")
+        # Check if Redis URL is empty or default localhost
+        if not settings.REDIS_URL or settings.REDIS_URL.strip() == "" or settings.REDIS_URL in ["redis://localhost:6379/0", "redis://localhost:6379"]:
+            logger.info("Redis not configured. Skipping Redis initialization.")
             logger.info("Backend will run without Redis caching and real-time features.")
             return
         
@@ -133,6 +133,10 @@ async def publish_event(channel: str, event: str, data: Any) -> bool:
     """Publish an event to a Redis channel."""
     try:
         client = get_redis_client()
+        if client is None:
+            logger.debug("Redis not available, skipping event publish", channel=channel, event_name=event)
+            return False  # Redis not available
+        
         message = {
             "event": event,
             "data": data,
@@ -141,13 +145,17 @@ async def publish_event(channel: str, event: str, data: Any) -> bool:
         await client.publish(channel, json.dumps(message))
         return True
     except Exception as e:
-        logger.error("Failed to publish event", channel=channel, error=str(e))
+        logger.error("Failed to publish event", channel=channel, event_name=event, error=str(e))
         return False
 
 async def subscribe_to_channel(channel: str) -> Any:
     """Subscribe to a Redis channel for real-time updates."""
     try:
         client = get_redis_client()
+        if client is None:
+            logger.warning("Redis not available, cannot subscribe to channel", channel=channel)
+            raise ConnectionError("Redis not available")
+        
         pubsub = client.pubsub()
         await pubsub.subscribe(channel)
         return pubsub
@@ -216,6 +224,10 @@ async def check_rate_limit(key: str, limit: int, window: int = 60) -> bool:
     """Check if a rate limit has been exceeded."""
     try:
         client = get_redis_client()
+        if client is None:
+            logger.debug("Redis not available, allowing request (no rate limiting)", key=key)
+            return True  # Allow if Redis not available
+        
         current = await client.get(key)
         
         if current is None:

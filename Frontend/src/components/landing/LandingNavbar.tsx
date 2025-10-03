@@ -26,7 +26,18 @@ export const LandingNavbar = () => {
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
+          className="flex items-center gap-4"
         >
+          <Link to="/login">
+            <Button variant="ghost" className="text-muted-foreground hover:text-foreground">
+              Sign In
+            </Button>
+          </Link>
+          <Link to="/signup">
+            <Button variant="outline" className="mr-4">
+              Sign Up
+            </Button>
+          </Link>
           <Link to="/dashboard">
             <Button variant="outline" className="mr-4">
               Dashboard

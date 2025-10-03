@@ -7,11 +7,22 @@ import realEstateAPIsService, {
   PropertyFilters 
 } from '../lib/realEstateAPIsService';
 
+interface RealEstateSummary {
+  total_properties: number;
+  filtered_count: number;
+  average_price: number;
+  average_estimated_value: number;
+  property_types_available: string[];
+  market_trends: string[];
+  api_confidence_avg: number;
+  data_sources: string[];
+}
+
 interface UseRealEstateAPIsReturn {
   properties: PropertyData[];
   marketData: MarketData | null;
   apiStatus: APIStatus | null;
-  summary: any;
+  summary: RealEstateSummary | null;
   loading: boolean;
   error: string | null;
   isConnected: boolean;
@@ -31,7 +42,7 @@ export function useRealEstateAPIs(
   const [properties, setProperties] = useState<PropertyData[]>([]);
   const [marketData, setMarketData] = useState<MarketData | null>(null);
   const [apiStatus, setApiStatus] = useState<APIStatus | null>(null);
-  const [summary, setSummary] = useState<any>(null);
+  const [summary, setSummary] = useState<RealEstateSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);

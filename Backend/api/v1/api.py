@@ -16,7 +16,22 @@ from .endpoints import (
     health,
     supabase,
     investment_opportunities,
-    real_estate_apis
+    real_estate_apis,
+    demo_schedule,
+    property_scanner,
+    documents,
+    underwriting,
+    legal_compliance,
+    investment_committee,
+    execution_closing,
+    post_acquisition,
+    subscription,
+    ai_agents,
+    property_intelligence,
+    analytics,
+    automation,
+    ask,
+    agent_management
 )
 
 # Create main API router
@@ -83,6 +98,101 @@ api_router.include_router(
     tags=["real-estate-apis"]
 )
 
+api_router.include_router(
+    demo_schedule.router,
+    prefix="/demo-schedule",
+    tags=["demo-schedule"]
+)
+
+api_router.include_router(
+    property_scanner.router,
+    prefix="/property-scanner",
+    tags=["property-scanner"]
+)
+
+api_router.include_router(
+    documents.router,
+    prefix="/documents",
+    tags=["documents"]
+)
+
+api_router.include_router(
+    underwriting.router,
+    prefix="/underwriting",
+    tags=["underwriting"]
+)
+
+api_router.include_router(
+    legal_compliance.router,
+    prefix="/legal-compliance",
+    tags=["legal-compliance"]
+)
+
+api_router.include_router(
+    investment_committee.router,
+    prefix="/investment-committee",
+    tags=["investment-committee"]
+)
+
+api_router.include_router(
+    execution_closing.router,
+    prefix="/execution-closing",
+    tags=["execution-closing"]
+)
+
+api_router.include_router(
+    post_acquisition.router,
+    prefix="/post-acquisition",
+    tags=["post-acquisition"]
+)
+
+api_router.include_router(
+    subscription.router,
+    prefix="/subscription",
+    tags=["subscription"]
+)
+
+api_router.include_router(
+    ai_agents.router,
+    prefix="/ai-agents",
+    tags=["ai-agents"]
+)
+
+# New comprehensive property intelligence endpoints
+api_router.include_router(
+    property_intelligence.router,
+    prefix="/property-intelligence",
+    tags=["property-intelligence"]
+)
+
+# Analytics endpoints
+api_router.include_router(
+    analytics.router,
+    prefix="/analytics",
+    tags=["analytics"]
+)
+
+# Automation endpoints
+api_router.include_router(
+    automation.router,
+    prefix="/automation",
+    tags=["automation"]
+)
+
+# Ask Janus endpoints
+api_router.include_router(
+    ask.router,
+    prefix="/ask",
+    tags=["ask"]
+)
+
+# Agent Management endpoints
+api_router.include_router(
+    agent_management.router,
+    prefix="/agents",
+    tags=["agent-management"]
+)
+
 # Root endpoint
 @api_router.get("/")
 async def root():
@@ -102,6 +212,17 @@ async def root():
             "supabase": "/api/v1/supabase",
             "investment-opportunities": "/api/v1/investment-opportunities",
             "real-estate-apis": "/api/v1/real-estate-apis",
+            "demo-schedule": "/api/v1/demo-schedule",
+            "property-scanner": "/api/v1/property-scanner",
+            "documents": "/api/v1/documents",
+            "underwriting": "/api/v1/underwriting",
+            "legal-compliance": "/api/v1/legal-compliance",
+            "investment-committee": "/api/v1/investment-committee",
+            "execution-closing": "/api/v1/execution-closing",
+            "post-acquisition": "/api/v1/post-acquisition",
+            "subscription": "/api/v1/subscription",
+            "property-intelligence": "/api/v1/property-intelligence",
+            "analytics": "/api/v1/analytics",
             "docs": "/docs",
             "redoc": "/redoc"
         }

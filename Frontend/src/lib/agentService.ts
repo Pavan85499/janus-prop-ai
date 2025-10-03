@@ -13,7 +13,7 @@ export interface AgentActivity {
 
 export interface AgentStatus {
   name: string;
-  status: any;
+  status: string;
   capabilities: string[];
   last_activity: string;
 }
@@ -25,7 +25,7 @@ export interface AgentActivityResponse {
     active_tasks: number;
     completed_tasks: number;
     alerts: number;
-    system_status: any;
+    system_status: string;
   };
 }
 
@@ -77,23 +77,23 @@ class AgentService {
     if (limit) params.append('limit', limit.toString());
     if (agentType) params.append('agent_type', agentType);
 
-    const endpoint = `/api/agents/activity${params.toString() ? `?${params.toString()}` : ''}`;
+    const endpoint = `/api/v1/agents/activity${params.toString() ? `?${params.toString()}` : ''}`;
     return this.makeRequest<AgentActivityResponse>(endpoint);
   }
 
   async getAgentsStatus(): Promise<AgentsStatusResponse> {
-    return this.makeRequest<AgentsStatusResponse>('/api/agents/status');
+    return this.makeRequest<AgentsStatusResponse>('/api/v1/agents/status');
   }
 
   async dismissActivity(activityId: string): Promise<{ success: boolean; message: string }> {
-    return this.makeRequest<{ success: boolean; message: string }>('/api/agents/activity/dismiss', {
+    return this.makeRequest<{ success: boolean; message: string }>('/api/v1/agents/activity/dismiss', {
       method: 'POST',
       body: JSON.stringify({ activity_id: activityId }),
     });
   }
 
-  async getSystemStatus(): Promise<any> {
-    return this.makeRequest<any>('/api/system/status');
+  async getSystemStatus(): Promise<unknown> {
+    return this.makeRequest<unknown>('/api/v1/health/detailed');
   }
 
   // Health check for the backend
@@ -123,15 +123,15 @@ class AgentService {
   }
 
   // Gemini AI Methods
-  async analyzePropertyWithGemini(propertyData: any): Promise<any> {
-    return this.makeRequest<any>('/api/gemini/analyze-property', {
+  async analyzePropertyWithGemini(propertyData: unknown): Promise<unknown> {
+    return this.makeRequest<unknown>('/api/v1/ai-insights/generate', {
       method: 'POST',
       body: JSON.stringify({ property_data: propertyData }),
     });
   }
 
-  async generateInsightsWithGemini(insightType: string, propertyContext: any): Promise<any> {
-    return this.makeRequest<any>('/api/gemini/generate-insights', {
+  async generateInsightsWithGemini(insightType: string, propertyContext: unknown): Promise<unknown> {
+    return this.makeRequest<unknown>('/api/v1/ai-insights/insights', {
       method: 'POST',
       body: JSON.stringify({ 
         insight_type: insightType, 
@@ -140,8 +140,8 @@ class AgentService {
     });
   }
 
-  async performMarketAnalysisWithGemini(location: string, marketData: any): Promise<any> {
-    return this.makeRequest<any>('/api/gemini/market-analysis', {
+  async performMarketAnalysisWithGemini(location: string, marketData: unknown): Promise<unknown> {
+    return this.makeRequest<unknown>('/api/v1/ai-insights/analyses', {
       method: 'POST',
       body: JSON.stringify({ 
         location, 
@@ -151,23 +151,23 @@ class AgentService {
   }
 
   // ATTOM Data Methods
-  async getATTOMPropertyData(address: string): Promise<any> {
-    return this.makeRequest<any>(`/api/attom/property/${encodeURIComponent(address)}`);
+  async getATTOMPropertyData(address: string): Promise<unknown> {
+    return this.makeRequest<unknown>(`/api/v1/real-estate-apis/property/${encodeURIComponent(address)}`);
   }
 
-  async searchATTOMProperties(criteria: any): Promise<any> {
-    return this.makeRequest<any>('/api/attom/search', {
+  async searchATTOMProperties(criteria: unknown): Promise<unknown> {
+    return this.makeRequest<unknown>('/api/v1/real-estate-apis/properties', {
       method: 'POST',
       body: JSON.stringify({ criteria }),
     });
   }
 
-  async getATTOMMarketData(location: string): Promise<any> {
-    return this.makeRequest<any>(`/api/attom/market/${encodeURIComponent(location)}`);
+  async getATTOMMarketData(location: string): Promise<unknown> {
+    return this.makeRequest<unknown>('/api/v1/real-estate-apis/market-data');
   }
 
-  async getATTOMComparables(propertyData: any, radius: number = 0.5, limit: number = 10): Promise<any> {
-    return this.makeRequest<any>('/api/attom/comparables', {
+  async getATTOMComparables(propertyData: unknown, radius: number = 0.5, limit: number = 10): Promise<unknown> {
+    return this.makeRequest<unknown>('/api/v1/real-estate-apis/properties', {
       method: 'POST',
       body: JSON.stringify({ 
         property_data: propertyData, 
@@ -177,8 +177,8 @@ class AgentService {
     });
   }
 
-  async getATTOMForeclosureData(location: string): Promise<any> {
-    return this.makeRequest<any>(`/api/attom/foreclosure/${encodeURIComponent(location)}`);
+  async getATTOMForeclosureData(location: string): Promise<unknown> {
+    return this.makeRequest<unknown>('/api/v1/real-estate-apis/properties');
   }
 }
 

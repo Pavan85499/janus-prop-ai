@@ -90,21 +90,21 @@ class BackendService {
   }
 
   async detailedHealthCheck(): Promise<BackendStatus> {
-    return this.makeRequest<BackendStatus>('/health/detailed');
+    return this.makeRequest<BackendStatus>('/api/v1/health/detailed');
   }
 
   // Supabase Configuration
   async getSupabaseConfig(): Promise<SupabaseConfig> {
-    return this.makeRequest<SupabaseConfig>('/supabase/config');
+    return this.makeRequest<SupabaseConfig>('/api/v1/supabase/config');
   }
 
   async getSupabaseStatus(): Promise<SupabaseStatus> {
-    return this.makeRequest<SupabaseStatus>('/supabase/status');
+    return this.makeRequest<SupabaseStatus>('/api/v1/supabase/status');
   }
 
   async testSupabaseConnection(): Promise<{ status: string; message: string }> {
     return this.makeRequest<{ status: string; message: string }>(
-      '/supabase/test-connection',
+      '/api/v1/supabase/test-connection',
       { method: 'POST' }
     );
   }
@@ -132,6 +132,24 @@ class BackendService {
   updateBaseUrl(newUrl: string) {
     this.baseUrl = newUrl;
     config.api.baseUrl = newUrl;
+  }
+
+  // Analytics
+  async getROITrends(months: number = 12): Promise<{ series: { period: string; avg_roi: number; count: number }[]; unit: string }>{
+    return this.makeRequest(`/api/v1/analytics/roi-trends?months=${months}`);
+  }
+
+  async getDealVelocity(months: number = 12): Promise<{ series: { period: string; avg_days_to_close: number; count: number }[]; unit: string }>{
+    return this.makeRequest(`/api/v1/analytics/deal-velocity?months=${months}`);
+  }
+
+  async getPortfolioBreakdown(by: 'type' | 'location' = 'type', topN: number = 10): Promise<{
+    by: 'type' | 'location';
+    items: { label: string; count: number; total_value: number; share: number }[];
+    total_count: number;
+    total_value: number;
+  }>{
+    return this.makeRequest(`/api/v1/analytics/portfolio-breakdown?by=${by}&top_n=${topN}`);
   }
 }
 

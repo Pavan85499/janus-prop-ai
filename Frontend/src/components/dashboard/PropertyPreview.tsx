@@ -15,8 +15,24 @@ import {
   Bot
 } from "lucide-react";
 
+interface Property {
+  id: string;
+  address: string;
+  price: number;
+  estimatedValue: number;
+  equity: number;
+  type: string;
+  beds: number;
+  baths: number;
+  sqft: number;
+  janusScore: number;
+  distressLevel: string;
+  image: string;
+  daysOnMarket?: number;
+}
+
 interface PropertyPreviewProps {
-  property?: any;
+  property?: Property;
 }
 
 export function PropertyPreview({ property }: PropertyPreviewProps) {
@@ -59,7 +75,7 @@ export function PropertyPreview({ property }: PropertyPreviewProps) {
         
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1 min-w-0">
-            <h3 className="font-display text-lg font-semibold text-foreground mb-2">
+            <h3 className="text-lg font-semibold text-foreground mb-2">
               {property.address}
             </h3>
             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
@@ -90,7 +106,7 @@ export function PropertyPreview({ property }: PropertyPreviewProps) {
 
       {/* Financial Stats */}
       <div className="p-6 border-b border-border">
-        <h4 className="font-display text-base font-semibold text-foreground mb-4">
+        <h4 className="text-base font-semibold text-foreground mb-4">
           Financial Overview
         </h4>
         

@@ -1,0 +1,104 @@
+Janus AI — The Bloomberg of Real Estate
+The Problem
+Real estate is the largest asset class in the world, yet the investment process is deeply fragmented. An investor or developer today has to juggle:
+Sourcing tools (PropStream, CoStar, Reonomy, MLS access).
+
+Underwriting models (Excel spreadsheets, manual comps).
+
+Legal reviews (lawyers manually pulling deeds, zoning, liens).
+
+Financing outreach (mortgage brokers, banks, lenders).
+
+Agent/broker communication (calls, email threads).
+
+Investment committee prep (assembling decks, stress testing manually).
+
+The system hasn’t changed in decades. Investors still operate as if every deal were a one-off.
+
+The Solution — Janus AI
+Janus AI is the first end-to-end platform that consolidates the full investment lifecycle into a single hub.
+Through a system of specialized AI agents, Janus transforms the investment process:
+Deal Sourcing & Discovery
+
+Scan millions of properties for distressed, undervalued, or high-potential assets.
+
+Surface leads in real time with explainable insights.
+ 
+Document Ingestion & Centralization
+
+Upload deeds, leases, inspections, or financials.
+
+Janus parses and standardizes all documents into structured data.
+
+Automated Underwriting & Analysis
+
+Instant cash-flow models, rent comps, renovation scenarios, and cap rates.
+
+Sensitivity analyses and stress tests run automatically.
+
+Legal & Compliance Checks
+
+Automated review of ownership, zoning, permits, liens, and tax history.
+
+AI legal assistant generates reports for lawyers to validate.
+
+AI Investment Committee
+
+A panel of agents debates pros and cons, surfacing risks and opportunities.
+
+Produces an in-depth, human-readable investment memo with recommendations.
+
+Execution & Closing
+
+Contact property owners directly.
+
+Generate offer letters, contracts, and financing packages.
+
+Connect to lenders and partners — all from within Janus.
+
+Post-Acquisition Intelligence
+
+Track renovations, tenant demand, and refinancing opportunities.
+
+Ongoing monitoring to maximize asset value.
+
+Why Janus Wins
+All-in-One Platform: The first true one-stop shop for sourcing, underwriting, legal, and execution.
+
+AI Agents = Full Investment Team: Replicates the work of analysts, underwriters, and lawyers — at machine speed.
+
+Explainable Insights: Investors get not just results, but reasoning they can trust.
+
+Direct Profitability: Faster, cleaner, and smarter workflows translate directly into more deals closed and higher ROI.
+
+Bloomberg Parallel: Just as Bloomberg unified financial markets into one indispensable terminal, Janus unifies real estate investment into a single, essential platform.
+
+Market Opportunity
+$32B+ PropTech market by 2030.
+
+2M+ licensed professionals in the U.S. and millions of active investors.
+
+Legacy platforms (CoStar, Reonomy, PropStream) provide data — but none provide end-to-end automation or decision-making.
+
+Janus captures a market hungry for clarity, speed, and efficiency.
+
+Business Model
+SaaS Subscriptions:
+
+Lite ($99–$299/month) — small investors.
+
+Pro ($1,000–$3,000/month) — firms and high-volume operators.
+
+Enterprise ($50k+ contracts) — REITs, funds, institutional users.
+
+Transaction Revenue: Fees on deals closed through Janus.
+
+Data/API Licensing: Resell enriched data and insights to partners.
+
+Vision
+Janus AI will become the Bloomberg Terminal of Real Estate:
+The indispensable platform every professional needs.
+
+A seamless environment where discovery, analysis, legal, and closing converge.
+
+A system that turns complexity into clarity, inefficiency into opportunity, and data into profitable deals.

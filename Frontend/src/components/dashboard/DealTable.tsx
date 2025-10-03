@@ -83,8 +83,20 @@ const mockDeals = [
   },
 ];
 
+interface Deal {
+  id: string;
+  address: string;
+  lienScore: number;
+  capRate: number;
+  strategy: string;
+  aiSummary: string;
+  risk: string;
+  price: string;
+  rentEstimate: string;
+}
+
 interface DealTableProps {
-  onPropertySelect: (property: any) => void;
+  onPropertySelect: (property: Deal) => void;
 }
 
 export function DealTable({ onPropertySelect }: DealTableProps) {
@@ -168,7 +180,7 @@ export function DealTable({ onPropertySelect }: DealTableProps) {
         <CardHeader>
                   <CardTitle className="flex items-center gap-2">
           <TrendingUp className="w-5 h-5 text-primary" />
-          Investment Opportunities
+          Live Deal Pipeline
           {lastUpdated && (
             <span className="text-sm font-normal text-muted-foreground">
               • Updated {lastUpdated.toLocaleTimeString()}

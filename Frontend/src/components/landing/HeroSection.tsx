@@ -73,18 +73,31 @@ export const HeroSection = () => {
           transition={{ duration: 0.4, delay: 0.6, ease: "easeOut" }}
           className="flex flex-col sm:flex-row gap-4 justify-center"
         >
-          <Button 
-            size="lg" 
-            className="btn-professional text-base px-8 py-3 font-medium"
-          >
-            Request Access
-          </Button>
-          <Button 
-            size="lg" 
-            className="btn-institutional text-base px-8 py-3 font-medium"
-          >
-            Schedule Demo
-          </Button>
+          <Link to="/signup">
+            <Button 
+              size="lg" 
+              className="btn-professional text-base px-8 py-3 font-medium"
+            >
+              Get Started Free
+            </Button>
+          </Link>
+          <Link to="/schedule-demo">
+            <Button 
+              size="lg" 
+              className="btn-institutional text-base px-8 py-3 font-medium"
+            >
+              Schedule Demo
+            </Button>
+          </Link>
+          <Link to="/login">
+            <Button 
+              size="lg" 
+              variant="outline"
+              className="text-base px-8 py-3 font-medium border-border/50 hover:bg-secondary"
+            >
+              Sign In
+            </Button>
+          </Link>
         </motion.div>
 
         <motion.div

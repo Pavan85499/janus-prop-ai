@@ -14,34 +14,54 @@ const Landing = () => {
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
       <ScrollNavigation />
-      <div id="hero">
+      
+      {/* Hero Section with Animatic Entrance */}
+      <div id="hero" className="responsive-fade-in">
         <HeroSection />
       </div>
-      <div id="lien-intelligence">
+      
+      {/* Lien Intelligence with Staggered Animation */}
+      <div id="lien-intelligence" className="responsive-slide-in-left">
         <LienIntelligenceSection />
       </div>
-      <div id="intelligence-engine">
+      
+      {/* Intelligence Engine with Scale Animation */}
+      <div id="intelligence-engine" className="responsive-scale-in">
         <JanusIntelligenceEngineSection />
       </div>
-      <div id="agents">
+      
+      {/* Agents with Staggered Cards */}
+      <div id="agents" className="responsive-fade-in">
         <JanusAgentsSection />
       </div>
-      <div id="dashboard">
+      
+      {/* Dashboard with Grid Animation */}
+      <div id="dashboard" className="responsive-slide-in-right">
         <MainDashboard />
       </div>
-      <div id="market-intelligence">
+      
+      {/* Market Intelligence with Fade Up */}
+      <div id="market-intelligence" className="responsive-fade-in">
         <MarketIntelligence />
       </div>
-      <div id="pipeline">
+      
+      {/* Pipeline with Slide Animation */}
+      <div id="pipeline" className="responsive-slide-in-left">
         <PipelineSection />
       </div>
-      <div id="architecture">
+      
+      {/* Architecture with Scale Animation */}
+      <div id="architecture" className="responsive-scale-in">
         <DealIntelligenceSection />
       </div>
-      <div id="leads">
+      
+      {/* Leads with Fade Animation */}
+      <div id="leads" className="responsive-fade-in">
         <LeadManagement />
       </div>
-      <div id="demo">
+      
+      {/* Demo with Bounce Animation */}
+      <div id="demo" className="responsive-fade-in">
         <ClosingSection />
       </div>
     </div>

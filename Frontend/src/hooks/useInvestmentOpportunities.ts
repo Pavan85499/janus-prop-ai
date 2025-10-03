@@ -6,10 +6,22 @@ import investmentOpportunitiesService, {
   InvestmentFilters 
 } from '../lib/investmentOpportunitiesService';
 
+interface InvestmentSummary {
+  total_opportunities: number;
+  filtered_count: number;
+  average_price: number;
+  average_equity_gain: number;
+  average_cap_rate: number;
+  average_janus_score: number;
+  strategies_available: string[];
+  risk_levels_available: string[];
+  property_types_available: string[];
+}
+
 interface UseInvestmentOpportunitiesReturn {
   opportunities: InvestmentOpportunity[];
   marketAnalysis: MarketAnalysis | null;
-  summary: any;
+  summary: InvestmentSummary | null;
   loading: boolean;
   error: string | null;
   isConnected: boolean;
@@ -27,7 +39,7 @@ export function useInvestmentOpportunities(
 ): UseInvestmentOpportunitiesReturn {
   const [opportunities, setOpportunities] = useState<InvestmentOpportunity[]>([]);
   const [marketAnalysis, setMarketAnalysis] = useState<MarketAnalysis | null>(null);
-  const [summary, setSummary] = useState<any>(null);
+  const [summary, setSummary] = useState<InvestmentSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);

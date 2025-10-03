@@ -16,8 +16,20 @@ import {
   Calculator
 } from "lucide-react";
 
+interface Deal {
+  id: string;
+  address: string;
+  lienScore: number;
+  capRate: number;
+  strategy: string;
+  aiSummary: string;
+  risk: string;
+  price: string;
+  rentEstimate: string;
+}
+
 interface PropertyModalProps {
-  property: any;
+  property: Deal;
   open: boolean;
   onClose: () => void;
 }

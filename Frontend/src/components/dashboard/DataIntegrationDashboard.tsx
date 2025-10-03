@@ -37,9 +37,17 @@ interface DataIntegrationStats {
   last_full_sync: string;
 }
 
+interface NewSourceConfig {
+  source_id: string;
+  name: string;
+  type: string;
+  base_url: string;
+  api_key: string;
+}
+
 interface DataIntegrationDashboardProps {
   onSyncSource: (sourceId: string) => void;
-  onAddSource: (sourceConfig: any) => void;
+  onAddSource: (sourceConfig: NewSourceConfig) => void;
 }
 
 const DataIntegrationDashboard: React.FC<DataIntegrationDashboardProps> = ({ 

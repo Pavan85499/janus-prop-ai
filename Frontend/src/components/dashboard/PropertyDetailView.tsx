@@ -37,8 +37,24 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 
+interface Property {
+  id: string;
+  address: string;
+  price: number;
+  estimatedValue: number;
+  equity: number;
+  type: string;
+  beds: number;
+  baths: number;
+  sqft: number;
+  janusScore: number;
+  distressLevel: string;
+  image: string;
+  daysOnMarket?: number;
+}
+
 interface PropertyDetailViewProps {
-  property?: any;
+  property?: Property;
   open: boolean;
   onClose: () => void;
 }

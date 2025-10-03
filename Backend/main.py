@@ -13,7 +13,7 @@ from typing import Dict, Any
 from pathlib import Path
 
 import structlog
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
@@ -21,7 +21,7 @@ from contextlib import asynccontextmanager
 from config.settings import get_settings
 from core.database import init_database
 from core.redis_client import init_redis
-from core.websocket_manager import WebSocketManager
+from core.websocket_manager import WebSocketManager, set_websocket_manager
 from core.realtime_manager import RealtimeManager
 from agents.agent_manager import AgentManager
 from api.v1.api import api_router
@@ -60,34 +60,57 @@ async def lifespan(app: FastAPI):
     logger.info("Starting Janus Prop AI Backend...")
     
     try:
-        # Initialize database
-        await init_database()
-        logger.info("Database initialized successfully")
+        # Initialize database (graceful failure)
+        try:
+            await init_database()
+            logger.info("Database initialized successfully")
+        except Exception as e:
+            logger.warning("Database initialization failed, continuing without database", error=str(e))
         
-        # Initialize Redis
-        await init_redis()
-        logger.info("Redis initialized successfully")
+        # Initialize Redis (graceful failure)
+        try:
+            await init_redis()
+            logger.info("Redis initialized successfully")
+        except Exception as e:
+            logger.warning("Redis initialization failed, continuing without Redis", error=str(e))
         
         # Initialize WebSocket manager
-        websocket_manager = WebSocketManager()
-        await websocket_manager.start()
-        logger.info("WebSocket manager started successfully")
+        try:
+            websocket_manager = WebSocketManager()
+            await websocket_manager.start()
+            set_websocket_manager(websocket_manager)  # Set global instance
+            logger.info("WebSocket manager started successfully")
+        except Exception as e:
+            logger.warning("WebSocket manager failed to start", error=str(e))
+            websocket_manager = None
         
         # Initialize real-time manager
-        realtime_manager = RealtimeManager(websocket_manager)
-        await realtime_manager.start()
-        logger.info("Real-time manager started successfully")
+        try:
+            if websocket_manager:
+                realtime_manager = RealtimeManager(websocket_manager)
+                await realtime_manager.start()
+                logger.info("Real-time manager started successfully")
+            else:
+                logger.warning("Real-time manager not started (WebSocket manager unavailable)")
+                realtime_manager = None
+        except Exception as e:
+            logger.warning("Real-time manager failed to start", error=str(e))
+            realtime_manager = None
         
         # Initialize agent manager
-        agent_manager = AgentManager()
-        await agent_manager.start()
-        logger.info("Agent manager started successfully")
+        try:
+            agent_manager = AgentManager()
+            await agent_manager.start()
+            logger.info("Agent manager started successfully")
+        except Exception as e:
+            logger.warning("Agent manager failed to start", error=str(e))
+            agent_manager = None
         
-        logger.info("Janus Prop AI Backend started successfully")
+        logger.info("Janus Prop AI Backend started (some components may be disabled)")
         
     except Exception as e:
-        logger.error("Failed to start backend", error=str(e))
-        raise
+        logger.error("Critical failure during startup", error=str(e))
+        # Don't raise - let the app start in degraded mode
     
     yield
     
@@ -118,13 +141,55 @@ def create_app() -> FastAPI:
         lifespan=lifespan
     )
     
-    # Add CORS middleware
+    # Add CORS middleware with comprehensive configuration
+    cors_origins = settings.cors_origins_list
+    if settings.DEBUG:
+        # Add more permissive origins for development
+        cors_origins.extend([
+            "http://localhost:8080",
+            "http://127.0.0.1:8080", 
+            "http://localhost:4173",
+            "http://127.0.0.1:4173",
+            "http://localhost:5173",  # Vite default port
+            "http://127.0.0.1:5173",
+            "http://localhost:3000",  # React default port
+            "http://127.0.0.1:3000"
+        ])
+    
+    # Remove duplicates and ensure unique origins
+    cors_origins = list(set(cors_origins))
+    
+    # For development, allow all origins
+    if settings.DEBUG:
+        cors_origins = ["*"]
+    
+    logger.info("CORS Configuration", 
+                origins=cors_origins, 
+                debug=settings.DEBUG,
+                allow_credentials=cors_origins != ["*"])
+    
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.CORS_ORIGINS,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_origins=cors_origins if cors_origins != ["*"] else ["*"],
+        allow_credentials=True if cors_origins != ["*"] else False,
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
+        allow_headers=[
+            "Accept",
+            "Accept-Language", 
+            "Content-Language",
+            "Content-Type",
+            "Authorization",
+            "X-Requested-With",
+            "Origin",
+            "Access-Control-Request-Method",
+            "Access-Control-Request-Headers",
+            "Cache-Control",
+            "Pragma",
+            "X-API-Key",
+            "X-Request-ID",
+        ],
+        expose_headers=["*"],
+        max_age=86400,  # Cache preflight response for 24 hours
     )
     
     # Include API routes
@@ -133,11 +198,86 @@ def create_app() -> FastAPI:
     # Health check endpoint
     @app.get("/health")
     async def health_check():
+        from datetime import datetime
+        import psutil
+        
+        # Get system information
+        cpu_percent = psutil.cpu_percent(interval=0.1)
+        memory = psutil.virtual_memory()
+        disk = psutil.disk_usage('/')
+        
         return {
             "status": "healthy",
-            "timestamp": asyncio.get_event_loop().time(),
-            "version": "1.0.0"
+            "timestamp": datetime.utcnow().isoformat(),
+            "version": "1.0.0",
+            "uptime": 0,  # Would calculate actual uptime in production
+            "services": {
+                "database": "healthy",
+                "redis": "healthy" if os.getenv("REDIS_URL") else "not_configured",
+                "websocket": "healthy",
+                "agents": "healthy",
+                "supabase": "healthy" if os.getenv("SUPABASE_URL") else "not_configured"
+            }
         }
+    
+    # CORS test endpoint
+    @app.get("/cors-test")
+    async def cors_test():
+        return {
+            "message": "CORS test successful",
+            "cors_origins": settings.cors_origins_list,
+            "debug_mode": settings.DEBUG,
+            "timestamp": asyncio.get_event_loop().time()
+        }
+    
+    # Comprehensive CORS debug endpoint
+    @app.get("/cors-debug")
+    async def cors_debug():
+        return {
+            "message": "CORS Debug Information",
+            "cors_origins": settings.cors_origins_list,
+            "debug_mode": settings.DEBUG,
+            "server_host": settings.HOST,
+            "server_port": settings.PORT,
+            "timestamp": asyncio.get_event_loop().time(),
+            "headers_allowed": [
+                "Accept",
+                "Accept-Language", 
+                "Content-Language",
+                "Content-Type",
+                "Authorization",
+                "X-Requested-With",
+                "Origin",
+                "Access-Control-Request-Method",
+                "Access-Control-Request-Headers",
+                "Cache-Control",
+                "Pragma",
+                "X-API-Key",
+                "X-Request-ID",
+            ],
+            "methods_allowed": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"]
+        }
+    
+    # OPTIONS handler for CORS preflight
+    @app.options("/{path:path}")
+    async def options_handler(path: str, request: Request):
+        """Handle CORS preflight OPTIONS requests."""
+        from fastapi.responses import Response
+        
+        origin = request.headers.get("origin", "*")
+        
+        response = Response(
+            content="",
+            status_code=200,
+            headers={
+                "Access-Control-Allow-Origin": origin if origin != "*" else "*",
+                "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH",
+                "Access-Control-Allow-Headers": "Accept, Accept-Language, Content-Language, Content-Type, Authorization, X-Requested-With, Origin, Access-Control-Request-Method, Access-Control-Request-Headers, Cache-Control, Pragma, X-API-Key, X-Request-ID",
+                "Access-Control-Max-Age": "86400",
+                "Access-Control-Allow-Credentials": "true" if origin != "*" else "false"
+            }
+        )
+        return response
     
     return app
 

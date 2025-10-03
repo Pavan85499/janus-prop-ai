@@ -19,6 +19,8 @@ export interface PropertyData {
   data_source: string;
   last_updated: string;
   api_confidence: number;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface MarketData {
@@ -158,8 +160,8 @@ class RealEstateAPIsService {
   }
 
   // Refresh property data
-  async refreshPropertyData(): Promise<any> {
-    return this.makeRequest<any>('/api/v1/real-estate-apis/refresh-data', {
+  async refreshPropertyData(): Promise<unknown> {
+    return this.makeRequest<unknown>('/api/v1/real-estate-apis/refresh-data', {
       method: 'POST'
     });
   }

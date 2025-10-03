@@ -311,9 +311,16 @@ websocket_manager: Optional[WebSocketManager] = None
 
 def get_websocket_manager() -> WebSocketManager:
     """Get the global WebSocket manager instance."""
+    global websocket_manager
     if websocket_manager is None:
-        raise RuntimeError("WebSocket manager not initialized")
+        # Create a default instance if none exists
+        websocket_manager = WebSocketManager()
     return websocket_manager
+
+def set_websocket_manager(manager: WebSocketManager):
+    """Set the global WebSocket manager instance."""
+    global websocket_manager
+    websocket_manager = manager
 
 __all__ = [
     "WebSocketManager",

@@ -5,7 +5,6 @@ import { GlobalIntelligence } from "@/components/dashboard/GlobalIntelligence";
 import { AgentModules } from "@/components/dashboard/AgentModules";
 import { DealTable } from "@/components/dashboard/DealTable";
 import { PropertyModal } from "@/components/dashboard/PropertyModal";
-import { AskJanusButton } from "@/components/dashboard/AskJanusButton";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AIInsightsPanel from "@/components/dashboard/AIInsightsPanel";
@@ -106,47 +105,97 @@ const Index = () => {
             <Header />
             
             <main className="flex-1 terminal-grid">
-              <div className="p-6">
+              <div className="responsive-padding animatic-container">
                 <Tabs defaultValue="overview" className="w-full">
-                  <TabsList className="grid w-full grid-cols-5">
-                    <TabsTrigger value="overview">Overview</TabsTrigger>
-                    <TabsTrigger value="ai-insights">AI Insights</TabsTrigger>
-                    <TabsTrigger value="data-integration">Data Integration</TabsTrigger>
-                    <TabsTrigger value="learning">Learning Metrics</TabsTrigger>
-                    <TabsTrigger value="agents">Agents</TabsTrigger>
+                  <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 
+                                    bg-card/50 border border-border/50 rounded-lg p-1
+                                    responsive-fade-in responsive-scroll-horizontal">
+                    <TabsTrigger 
+                      value="overview" 
+                      className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground
+                               transition-all duration-300 hover:scale-105 focus-ring touch-target"
+                    >
+                      <span className="mobile-only">Overview</span>
+                      <span className="tablet-up">Overview</span>
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="ai-insights"
+                      className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground
+                               transition-all duration-300 hover:scale-105 focus-ring touch-target"
+                    >
+                      <span className="mobile-only">AI</span>
+                      <span className="tablet-up">AI Insights</span>
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="data-integration"
+                      className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground
+                               transition-all duration-300 hover:scale-105 focus-ring touch-target"
+                    >
+                      <span className="mobile-only">Data</span>
+                      <span className="tablet-up">Data Integration</span>
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="learning"
+                      className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground
+                               transition-all duration-300 hover:scale-105 focus-ring touch-target"
+                    >
+                      <span className="mobile-only">Learn</span>
+                      <span className="tablet-up">Learning</span>
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="agents"
+                      className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground
+                               transition-all duration-300 hover:scale-105 focus-ring touch-target"
+                    >
+                      <span className="mobile-only">Agents</span>
+                      <span className="tablet-up">Agents</span>
+                    </TabsTrigger>
                   </TabsList>
                   
-                  <TabsContent value="overview" className="space-y-8">
-                    <GlobalIntelligence />
-                    <AgentModules />
-                    <DealTable onPropertySelect={handlePropertySelect} />
-                  </TabsContent>
-                  
-                  <TabsContent value="ai-insights" className="space-y-6">
-                    <AIInsightsPanel 
-                      analysis={mockPropertyAnalysis}
-                      onActionClick={handleActionClick}
-                    />
-                  </TabsContent>
-                  
-                  <TabsContent value="data-integration" className="space-y-6">
-                    <DataIntegrationDashboard 
-                      onSyncSource={handleSyncSource}
-                      onAddSource={handleAddSource}
-                    />
-                  </TabsContent>
-                  
-                  <TabsContent value="learning" className="space-y-6">
-                    <LearningMetricsDashboard 
-                      onExportData={handleExportData}
-                      onGenerateReport={handleGenerateReport}
-                    />
-                  </TabsContent>
-                  
-                  <TabsContent value="agents" className="space-y-6">
-                    <div className="space-y-8">
+                  <TabsContent value="overview" className="space-y-6 sm:space-y-8 animate-fade-in-up">
+                    <div className="card-stagger-1">
                       <GlobalIntelligence />
+                    </div>
+                    <div className="card-stagger-2">
                       <AgentModules />
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="ai-insights" className="space-y-4 sm:space-y-6 animate-fade-in-up">
+                    <div className="card-stagger-1">
+                      <AIInsightsPanel 
+                        analysis={mockPropertyAnalysis}
+                        onActionClick={handleActionClick}
+                      />
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="data-integration" className="space-y-4 sm:space-y-6 animate-fade-in-up">
+                    <div className="card-stagger-1">
+                      <DataIntegrationDashboard 
+                        onSyncSource={handleSyncSource}
+                        onAddSource={handleAddSource}
+                      />
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="learning" className="space-y-4 sm:space-y-6 animate-fade-in-up">
+                    <div className="card-stagger-1">
+                      <LearningMetricsDashboard 
+                        onExportData={handleExportData}
+                        onGenerateReport={handleGenerateReport}
+                      />
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="agents" className="space-y-6 sm:space-y-8 animate-fade-in-up">
+                    <div className="space-y-6 sm:space-y-8">
+                      <div className="card-stagger-1">
+                        <GlobalIntelligence />
+                      </div>
+                      <div className="card-stagger-2">
+                        <AgentModules />
+                      </div>
                     </div>
                   </TabsContent>
                 </Tabs>
@@ -160,8 +209,6 @@ const Index = () => {
           open={isPropertyModalOpen}
           onClose={() => setIsPropertyModalOpen(false)}
         />
-        
-        <AskJanusButton />
       </div>
     </SidebarProvider>
   );

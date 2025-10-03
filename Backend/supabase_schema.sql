@@ -47,6 +47,156 @@ CREATE INDEX IF NOT EXISTS idx_agents_active ON agents(is_active);
 CREATE INDEX IF NOT EXISTS idx_agents_config ON agents USING GIN(config);
 
 -- =====================================================
+-- AI AGENTS TABLES
+-- =====================================================
+
+-- AI Agents table
+CREATE TABLE IF NOT EXISTS ai_agents (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    
+    -- Basic information
+    name VARCHAR(100) NOT NULL,
+    agent_type VARCHAR(50) NOT NULL,
+    description TEXT,
+    version VARCHAR(20) DEFAULT '1.0.0',
+    
+    -- Configuration
+    is_active BOOLEAN DEFAULT TRUE,
+    config JSONB,
+    capabilities JSONB,
+    limitations JSONB,
+    
+    -- Performance metrics
+    max_concurrent_tasks INTEGER DEFAULT 5,
+    priority VARCHAR(20) DEFAULT 'normal',
+    health_score DECIMAL(3,2) DEFAULT 1.0,
+    average_response_time DECIMAL(10,2) DEFAULT 0.0,
+    
+    -- Statistics
+    total_tasks_completed INTEGER DEFAULT 0,
+    total_tasks_failed INTEGER DEFAULT 0,
+    total_runtime_hours DECIMAL(10,2) DEFAULT 0.0,
+    
+    -- Status tracking
+    current_status VARCHAR(20) DEFAULT 'offline',
+    last_heartbeat TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    last_error TEXT,
+    last_error_time TIMESTAMP WITH TIME ZONE,
+    
+    -- Metadata
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    created_by UUID
+);
+
+-- Agent Tasks table
+CREATE TABLE IF NOT EXISTS agent_tasks (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    agent_id UUID NOT NULL REFERENCES ai_agents(id) ON DELETE CASCADE,
+    
+    -- Task details
+    task_type VARCHAR(100) NOT NULL,
+    title VARCHAR(200),
+    description TEXT,
+    priority VARCHAR(20) DEFAULT 'normal',
+    status VARCHAR(20) DEFAULT 'pending',
+    
+    -- Task data
+    input_data JSONB,
+    output_data JSONB,
+    error_message TEXT,
+    progress DECIMAL(3,2) DEFAULT 0.0,
+    
+    -- Timing
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    started_at TIMESTAMP WITH TIME ZONE,
+    completed_at TIMESTAMP WITH TIME ZONE,
+    estimated_duration INTEGER, -- seconds
+    actual_duration INTEGER,    -- seconds
+    
+    -- Metadata
+    task_metadata JSONB,
+    tags JSONB,
+    created_by UUID
+);
+
+-- Agent Activities table
+CREATE TABLE IF NOT EXISTS agent_activities (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    agent_id UUID NOT NULL REFERENCES ai_agents(id) ON DELETE CASCADE,
+    
+    -- Activity details
+    activity_type VARCHAR(100) NOT NULL,
+    message TEXT NOT NULL,
+    level VARCHAR(20) DEFAULT 'info',
+    status VARCHAR(20) DEFAULT 'in_progress',
+    
+    -- Context
+    task_id UUID,
+    property_id UUID,
+    user_id UUID,
+    
+    -- Data
+    data JSONB,
+    activity_metadata JSONB,
+    
+    -- Timing
+    timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    duration INTEGER -- seconds
+);
+
+-- Agent Capabilities table
+CREATE TABLE IF NOT EXISTS agent_capabilities (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    agent_id UUID NOT NULL REFERENCES ai_agents(id) ON DELETE CASCADE,
+    
+    -- Capability details
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    version VARCHAR(20) DEFAULT '1.0.0',
+    is_enabled BOOLEAN DEFAULT TRUE,
+    
+    -- Configuration
+    config JSONB,
+    parameters JSONB,
+    
+    -- Performance
+    success_rate DECIMAL(5,2) DEFAULT 0.0,
+    average_duration DECIMAL(10,2) DEFAULT 0.0,
+    total_executions INTEGER DEFAULT 0,
+    
+    -- Metadata
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Indexes for AI Agents
+CREATE INDEX IF NOT EXISTS idx_ai_agents_type ON ai_agents(agent_type);
+CREATE INDEX IF NOT EXISTS idx_ai_agents_status ON ai_agents(current_status);
+CREATE INDEX IF NOT EXISTS idx_ai_agents_active ON ai_agents(is_active);
+CREATE INDEX IF NOT EXISTS idx_ai_agents_created_at ON ai_agents(created_at);
+
+-- Indexes for Agent Tasks
+CREATE INDEX IF NOT EXISTS idx_agent_tasks_agent_id ON agent_tasks(agent_id);
+CREATE INDEX IF NOT EXISTS idx_agent_tasks_status ON agent_tasks(status);
+CREATE INDEX IF NOT EXISTS idx_agent_tasks_type ON agent_tasks(task_type);
+CREATE INDEX IF NOT EXISTS idx_agent_tasks_created_at ON agent_tasks(created_at);
+CREATE INDEX IF NOT EXISTS idx_agent_tasks_priority ON agent_tasks(priority);
+
+-- Indexes for Agent Activities
+CREATE INDEX IF NOT EXISTS idx_agent_activities_agent_id ON agent_activities(agent_id);
+CREATE INDEX IF NOT EXISTS idx_agent_activities_type ON agent_activities(activity_type);
+CREATE INDEX IF NOT EXISTS idx_agent_activities_timestamp ON agent_activities(timestamp);
+CREATE INDEX IF NOT EXISTS idx_agent_activities_level ON agent_activities(level);
+CREATE INDEX IF NOT EXISTS idx_agent_activities_task_id ON agent_activities(task_id);
+CREATE INDEX IF NOT EXISTS idx_agent_activities_property_id ON agent_activities(property_id);
+
+-- Indexes for Agent Capabilities
+CREATE INDEX IF NOT EXISTS idx_agent_capabilities_agent_id ON agent_capabilities(agent_id);
+CREATE INDEX IF NOT EXISTS idx_agent_capabilities_name ON agent_capabilities(name);
+CREATE INDEX IF NOT EXISTS idx_agent_capabilities_enabled ON agent_capabilities(is_enabled);
+
+-- =====================================================
 -- PROPERTIES TABLE
 -- =====================================================
 CREATE TABLE IF NOT EXISTS properties (

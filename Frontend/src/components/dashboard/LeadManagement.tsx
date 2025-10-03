@@ -108,10 +108,11 @@ export function LeadManagement() {
 
   const sortedLeads = [...leads].sort((a, b) => {
     switch (sortBy) {
-      case 'priority':
+      case 'priority': {
         const priorityOrder = { high: 3, medium: 2, low: 1 };
         return priorityOrder[b.priority as keyof typeof priorityOrder] - 
                priorityOrder[a.priority as keyof typeof priorityOrder];
+      }
       case 'days':
         return b.daysInPipeline - a.daysInPipeline;
       default:
