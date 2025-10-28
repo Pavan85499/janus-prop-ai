@@ -16,6 +16,9 @@ import structlog
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+from starlette.middleware.base import BaseHTTPMiddleware
+from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 # Import configuration and core modules
 from config.settings import get_settings
@@ -50,6 +53,13 @@ logger = structlog.get_logger()
 websocket_manager: WebSocketManager = None
 realtime_manager: RealtimeManager = None
 agent_manager: AgentManager = None
+
+# Windows-specific: use SelectorEventLoop to avoid Proactor connection reset noise
+try:
+    if sys.platform.startswith("win"):
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+except Exception:
+    pass
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -141,6 +151,26 @@ def create_app() -> FastAPI:
         lifespan=lifespan
     )
     
+    # Add a top-level middleware BEFORE CORS to short-circuit OPTIONS
+    class PreflightMiddleware(BaseHTTPMiddleware):
+        async def dispatch(self, request, call_next):
+            from fastapi.responses import Response
+            if request.method == "OPTIONS":
+                origin = request.headers.get("origin", "*")
+                request_method = request.headers.get("access-control-request-method", "*")
+                request_headers = request.headers.get("access-control-request-headers", "*")
+                headers = {
+                    "Access-Control-Allow-Origin": origin if origin else "*",
+                    "Access-Control-Allow-Methods": request_method if request_method else "*",
+                    "Access-Control-Allow-Headers": request_headers if request_headers else "*",
+                    "Access-Control-Max-Age": "86400",
+                    "Access-Control-Allow-Credentials": "true" if origin and origin != "*" else "false",
+                    "X-Preflight-Bypass": "true",
+                }
+                return Response(content="", status_code=200, headers=headers)
+            return await call_next(request)
+
+
     # Add CORS middleware with comprehensive configuration
     cors_origins = settings.cors_origins_list
     if settings.DEBUG:
@@ -172,25 +202,14 @@ def create_app() -> FastAPI:
         CORSMiddleware,
         allow_origins=cors_origins if cors_origins != ["*"] else ["*"],
         allow_credentials=True if cors_origins != ["*"] else False,
-        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
-        allow_headers=[
-            "Accept",
-            "Accept-Language", 
-            "Content-Language",
-            "Content-Type",
-            "Authorization",
-            "X-Requested-With",
-            "Origin",
-            "Access-Control-Request-Method",
-            "Access-Control-Request-Headers",
-            "Cache-Control",
-            "Pragma",
-            "X-API-Key",
-            "X-Request-ID",
-        ],
+        allow_methods=["*"],
+        allow_headers=["*"],
         expose_headers=["*"],
         max_age=86400,  # Cache preflight response for 24 hours
     )
+    
+    # Register preflight middleware AFTER CORS so it wraps outermost
+    app.add_middleware(PreflightMiddleware)
     
     # Include API routes
     app.include_router(api_router, prefix="/api/v1")
@@ -219,6 +238,12 @@ def create_app() -> FastAPI:
                 "supabase": "healthy" if os.getenv("SUPABASE_URL") else "not_configured"
             }
         }
+    
+    # Explicit preflight for health
+    @app.options("/health")
+    async def health_options():
+        from fastapi.responses import Response
+        return Response(content="", status_code=200)
     
     # CORS test endpoint
     @app.get("/cors-test")
@@ -279,6 +304,23 @@ def create_app() -> FastAPI:
         )
         return response
     
+    # Fallback: convert any OPTIONS HTTPException into a 200 preflight
+    @app.exception_handler(StarletteHTTPException)
+    async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+        if request.method == "OPTIONS":
+            origin = request.headers.get("origin", "*")
+            request_method = request.headers.get("access-control-request-method", "*")
+            request_headers = request.headers.get("access-control-request-headers", "*")
+            headers = {
+                "Access-Control-Allow-Origin": origin if origin else "*",
+                "Access-Control-Allow-Methods": request_method if request_method else "*",
+                "Access-Control-Allow-Headers": request_headers if request_headers else "*",
+                "Access-Control-Max-Age": "86400",
+                "Access-Control-Allow-Credentials": "true" if origin and origin != "*" else "false",
+            }
+            return JSONResponse(status_code=200, content={}, headers=headers)
+        return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+    
     return app
 
 def main():
@@ -295,7 +337,9 @@ def main():
         "reload": settings.DEBUG,
         "log_level": settings.LOG_LEVEL.lower(),
         "access_log": True,
-        "use_colors": True
+        "use_colors": True,
+        "loop": "asyncio",
+        "http": "h11",
     }
     
     logger.info("Starting Janus Prop AI Backend server", config=uvicorn_config)

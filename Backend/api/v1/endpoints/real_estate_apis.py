@@ -19,6 +19,16 @@ logger = structlog.get_logger(__name__)
 
 router = APIRouter()
 
+@router.options("/api-status")
+async def options_api_status():
+    """Explicit CORS preflight handler for /api-status."""
+    return {}
+
+@router.options("/properties")
+async def options_properties():
+    """Explicit CORS preflight handler for /properties."""
+    return {}
+
 @router.get("/properties")
 async def get_real_estate_properties(
     limit: Optional[int] = Query(50, ge=1, le=1000, description="Maximum number of properties to return"),
